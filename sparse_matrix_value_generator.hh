@@ -2,7 +2,6 @@
 
 #include <random>
 #include <memory>
-#include <ntdef.h>
 #include "matrix_value_generator.hh"
 #include "matrix_value_factory.hh"
 
