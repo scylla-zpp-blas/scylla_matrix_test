@@ -12,5 +12,5 @@ private:
 public:
     float_value_factory(float min, float max, int seed);
 
-    virtual float next();
+    float next() override;
 };
