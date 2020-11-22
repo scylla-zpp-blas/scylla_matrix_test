@@ -4,6 +4,7 @@
 #include <memory>
 #include "matrix_value_generator.hh"
 #include "matrix_value_factory.hh"
+#include "utils/int_math.hh"
 
 class no_next_value_exception: public std::exception {
     const char* what() const noexcept override {
@@ -53,7 +54,7 @@ public:
         if (has_next()) {
             _calc_next_pos();
         }
-        return matrix_value((_last_pos - 1) / width(), (_last_pos - 1) % width(), _matrix_value_factory->next());
+        return matrix_value(IntMath::floor_div(_last_pos, width()), 1 + (_last_pos - 1) % width(), _matrix_value_factory->next());
     }
 
     size_t height() {
