@@ -42,7 +42,7 @@ public:
      * Returns true if the request was successful, otherwise false.
      * The subsequent operations can only be used in the first case.
      */
-    bool send();
+    void send();
 
     /* Prepares the next row of the request response.
      * Returns true if successful, false if there are no rows left to process.

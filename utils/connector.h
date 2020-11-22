@@ -15,7 +15,7 @@ class connector {
 
 public:
     /* Create a connection with given address and port */
-    connector(char* address = nullptr, char* port = nullptr);
+    connector(const char* address = nullptr, const char* port = nullptr);
 
     /* Utility function for obtaining session object used in procedures
      * pertaining to the connection.

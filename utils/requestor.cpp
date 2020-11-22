@@ -11,7 +11,9 @@ std::ostream& operator<<(std::ostream& os, requestor& r) {
     return os;
 }
 
-bool requestor::send() {
+void requestor::send() {
+    std::cerr << statement << std::endl;
+
     statement = cass_statement_new(query.str().c_str(), 0);
     cass_statement_set_consistency(statement, CASS_CONSISTENCY_QUORUM);
 
@@ -20,9 +22,8 @@ bool requestor::send() {
     if (cass_future_error_code(result_future) == CASS_OK) {
         result = cass_future_get_result(result_future);
         iterator = cass_iterator_from_result(result);
-        return true;
     } else {
-        return false;
+        throw std::runtime_error("Query error");
     }
 }
 

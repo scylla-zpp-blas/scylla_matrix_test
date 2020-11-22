@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-connector::connector(char* address, char* port) {
+connector::connector(const char* address, const char* port) {
     cluster = cass_cluster_new();
     session = cass_session_new();
 

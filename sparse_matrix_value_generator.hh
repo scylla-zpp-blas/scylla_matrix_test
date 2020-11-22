@@ -29,7 +29,8 @@ private:
     }
 
 public:
-    sparse_matrix_value_generator(int height, int width, size_t suggested_number_of_values, int seed, std::shared_ptr<matrix_value_factory<V>> matrix_value_factory) {
+    sparse_matrix_value_generator(int height, int width, size_t suggested_number_of_values,
+                                  int seed, std::shared_ptr<matrix_value_factory<V>> matrix_value_factory) {
         this->_height = height;
         this->_width = width;
         this->_suggested_max = suggested_number_of_values;
