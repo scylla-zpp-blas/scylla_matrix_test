@@ -2,16 +2,16 @@
 // Created by hayven on 21.11.2020.
 //
 
-#ifndef SCYLLA_MATRIX_TEST_CONNECTOR_H
-#define SCYLLA_MATRIX_TEST_CONNECTOR_H
+#ifndef SCYLLA_MATRIX_TEST_CONNECTOR_HH
+#define SCYLLA_MATRIX_TEST_CONNECTOR_HH
 
 #include <cassandra.h>
 
 /* A class providing an RAII abstraction for Cassandra/Scylla connections. */
 class connector {
-    CassCluster* cluster;
-    CassSession* session;
-    CassFuture* connect_future;
+    CassCluster* _cluster;
+    CassSession* _session;
+    CassFuture* _connect_future;
 
 public:
     /* Create a connection with given address and port */
@@ -25,4 +25,4 @@ public:
     ~connector();
 };
 
-#endif //SCYLLA_MATRIX_TEST_CONNECTOR_H
+#endif //SCYLLA_MATRIX_TEST_CONNECTOR_HH

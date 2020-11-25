@@ -2,8 +2,8 @@
 // Created by hayven on 21.11.2020.
 //
 
-#ifndef SCYLLA_MATRIX_TEST_MULTIPLICATOR_H
-#define SCYLLA_MATRIX_TEST_MULTIPLICATOR_H
+#ifndef SCYLLA_MATRIX_TEST_MULTIPLICATOR_HH
+#define SCYLLA_MATRIX_TEST_MULTIPLICATOR_HH
 
 #include "matrix_value_generator.hh"
 #include <utility>
@@ -23,4 +23,4 @@ public:
     virtual T get_result(std::pair<size_t, size_t> pos) = 0;
 };
 
-#endif //SCYLLA_MATRIX_TEST_MULTIPLICATOR_H
+#endif //SCYLLA_MATRIX_TEST_MULTIPLICATOR_HH

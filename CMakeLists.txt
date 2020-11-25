@@ -8,14 +8,14 @@ link_directories(${CMAKE_SOURCE_DIR}/lib)
 
 add_executable(scylla_matrix_test main.cpp matrix_value_generator.hh 
 sparse_matrix_value_generator.hh matrix_value_factory.hh float_value_factory.cc 
-float_value_factory.hh matrix_value.hh utils/requestor.cpp utils/requestor.h
-utils/connector.cpp utils/connector.h utils/int_math.cc utils/int_math.hh double_value_factory.cc double_value_factory.hh)
+float_value_factory.hh matrix_value.hh utils/requestor.cpp utils/requestor.hh
+utils/connector.cpp utils/connector.hh utils/int_math.cc utils/int_math.hh double_value_factory.cc double_value_factory.hh)
 
 target_link_libraries(scylla_matrix_test cassandra)
 
 add_executable(coo_test coordinate_list/coordinate_list.cpp matrix_value_generator.hh
         sparse_matrix_value_generator.hh matrix_value_factory.hh float_value_factory.cc
-        float_value_factory.hh matrix_value.hh utils/requestor.cpp utils/requestor.h
-        utils/connector.cpp utils/connector.h utils/int_math.cc utils/int_math.hh double_value_factory.cc double_value_factory.hh)
+        float_value_factory.hh matrix_value.hh utils/requestor.cpp utils/requestor.hh
+        utils/connector.cpp utils/connector.hh utils/int_math.cc utils/int_math.hh double_value_factory.cc double_value_factory.hh)
 target_link_libraries(coo_test cassandra)
 

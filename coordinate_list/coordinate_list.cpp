@@ -1,28 +1,31 @@
 // Connecting to ScyllaDB with a simple C++ program
+#include <algorithm>
 #include <cassandra.h>
 #include <iostream>
 #include <cstdlib>
+#include <map>
 #include <memory>
 #include <string>
 #include <random>
-#include "../multiplicator.h"
-#include "../utils/connector.h"
-#include "../utils/requestor.h"
+#include "../multiplicator.hh"
+#include "../utils/connector.hh"
+#include "../utils/requestor.hh"
 #include "../float_value_factory.hh"
 #include "../sparse_matrix_value_generator.hh"
 
-static int dimension = 5;
+static int dimension = 10;
 
 template<typename T>
 class COO : public multiplicator<T> {
+    using _block_t = std::vector<matrix_value<T>>;
     const std::string _namespace = "zpp";
     const std::string _table_name = "coo_test_matrix";
     const int _block_size = 3;
     std::shared_ptr<connector> _conn;
     size_t _matrix_id;
-    size_t result_id = 100;
+    size_t _result_id = 100;
 
-    void submit_block(std::vector<matrix_value<T>>& block, size_t block_id, size_t matrix_id) {
+    void submit_block(_block_t& block, size_t block_id, size_t matrix_id) {
         if (block.empty()) return;
 
         requestor query(_conn);
@@ -40,7 +43,7 @@ class COO : public multiplicator<T> {
         query.send();
     }
 
-    std::vector<matrix_value<T>> get_block(size_t block_id, size_t matrix_id) {
+    _block_t get_block(size_t block_id, size_t matrix_id) {
         requestor query(_conn);
         query << "SELECT * FROM " << _namespace << "." << _table_name
               << " WHERE block_id=" << block_id << " AND matrix_id=" << matrix_id << ";";
@@ -86,6 +89,17 @@ class COO : public multiplicator<T> {
         size_t second = div_up(pos.second, _block_size);
         return div_up(dimension, _block_size) * (first - 1) + second;
     }
+
+    void transpose_block(_block_t& b) {
+        for (auto &cell : b) {
+            std::swap(cell.i, cell.j);
+        }
+
+        /* Replace with bucket sort */
+        std::sort(b.begin(), b.end(), [](auto a, auto b){
+            return std::make_pair(a.i, a.j) < std::make_pair(b.i, b.j);
+        });
+    }
 public:
     COO(std::shared_ptr<connector> conn) : _conn(conn), _matrix_id(0) {
         /* Make sure that the necessary namespaces and table exist */
@@ -98,7 +112,7 @@ public:
         namespace_query.send();
 
         requestor table_erase(_conn);
-        table_erase << "DROP TABLE " << _namespace << "." << _table_name << ";";
+        table_erase << "DROP TABLE IF EXISTS " << _namespace << "." << _table_name << ";";
         table_erase.send();
 
         requestor table_query(_conn);
@@ -116,14 +130,13 @@ public:
 
         int next_batch_start = _block_size + 1;
         size_t block_id = 0;
-        std::vector< std::vector<matrix_value<T>> > blocks(div_up(dimension, _block_size));
+        std::vector<_block_t> blocks(div_up(dimension, _block_size));
 
-        std::cerr << gen.has_next() << std::endl;
+        std::cerr << "Generator has first number: " << gen.has_next() << std::endl;
 
         while (gen.has_next()) {
             matrix_value<T> next = gen.next();
-            next.i++; next.j++; // generator generates fields from 0 to dimension-1
-            std::cout << next.i << " " << next.j << " " << gen.has_next() << std::endl;
+            std::cerr << "Next number in generator: (" << next.i << ", " << next.j << "), some are still left (T/F): " << gen.has_next() << std::endl;
             while (next.i >= next_batch_start) {
                 for (auto &b : blocks) {
                     submit_block(b, ++block_id, _matrix_id);
@@ -145,14 +158,50 @@ public:
 
     /* Multiplies two matrices loaded into Scylla with load_matrix. */
     void multiply() {
-        size_t blocks_wide = div_up(dimension, _block_size);
-        size_t blocks_high = div_up(dimension, _block_size);
+        size_t blocks_dimension = div_up(dimension, _block_size);
 
-        for (size_t i = 1; i <= blocks_high; i++) {
-            for (size_t j = 1; j <= blocks_wide; j++) {
-                size_t block_id = (i - 1) * blocks_wide + j;
-                auto copy_from_a = get_block(block_id, _matrix_id - 1);
-                submit_block(copy_from_a, block_id, result_id);
+        for (size_t i = 1; i <= blocks_dimension; i++) {
+            for (size_t j = 1; j <= blocks_dimension; j++) {
+                /* We can use a vector, but that will be a bit more difficult */
+                std::map<std::pair<int, int>, double> result;
+
+                for (size_t k = 1; k <= blocks_dimension; k++) {
+                    _block_t copy_from_a = get_block((i - 1) * blocks_dimension + k, 1);
+                    _block_t copy_from_b = get_block((k - 1) * blocks_dimension + j, 2);
+
+                    transpose_block(copy_from_b);
+
+                    /* Merge by multiplication */
+                    auto it_1 = copy_from_a.begin();
+                    auto it_2 = copy_from_b.begin();
+
+                    while (it_1 != copy_from_a.end() && it_2 != copy_from_b.end()) {
+                        auto pair_1 = std::make_pair(it_1->i % _block_size, it_1->j % _block_size);
+                        auto pair_2 = std::make_pair(it_2->i % _block_size, it_2->j % _block_size);
+
+                        if (pair_1 == pair_2) {
+                            std::pair<int, int> product_coords = std::make_pair(it_1->i, it_2->i);
+                            result[product_coords] += it_1->val * it_2->val;
+                            std::cout << product_coords.first << ", " << product_coords.second << " += " << it_1->val * it_2->val << std::endl;
+
+                            it_1++;
+                            it_2++;
+                        } else {
+                            if (pair_1 < pair_2) {
+                                it_1++;
+                            } else {
+                                it_2++;
+                            }
+                        }
+                    }
+                }
+
+                _block_t result_block;
+                for (auto a : result) {
+                    result_block.emplace_back(a.first.first, a.first.second, a.second);
+                }
+
+                submit_block(result_block, (i - 1) * blocks_dimension + j, _result_id);
             }
         }
     }
@@ -162,7 +211,7 @@ public:
         size_t block_id = get_block_index_for_cell(pos);
         std::cerr << "Block for cell: " << pos.first << " " << pos.second << ": " << block_id << std::endl;
 
-        auto target_block = get_block(block_id, result_id);
+        auto target_block = get_block(block_id, _result_id);
         for (auto& val : target_block) {
             if (val.i == pos.first && val.j == pos.second) {
                 return val.val;
@@ -178,17 +227,17 @@ int main(int argc, char* argv[]) {
 
     try {
         conn = std::make_shared<connector>("172.17.0.2");
-        std::cout << "Connected" << std::endl;
+        std::cerr << "Connected" << std::endl;
     } catch (...) {
-        std::cout << "Connection error" << std::endl;
+        std::cerr << "Connection error" << std::endl;
         exit(1);
     }
 
     std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 0);
     COO<float> multiplicator_instance(conn);
 
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, 3, 0, factory));
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, 3, 1, factory));
+    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, 50, 0, factory));
+    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, 50, 1, factory));
 
     multiplicator_instance.multiply();
 

@@ -2,10 +2,10 @@
 // Created by hayven on 21.11.2020.
 //
 
-#ifndef SCYLLA_MATRIX_TEST_REQUESTOR_H
-#define SCYLLA_MATRIX_TEST_REQUESTOR_H
+#ifndef SCYLLA_MATRIX_TEST_REQUESTOR_HH
+#define SCYLLA_MATRIX_TEST_REQUESTOR_HH
 
-#include "connector.h"
+#include "connector.hh"
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -16,13 +16,13 @@
  * Implements the RAII idiom to reduce boilerplate in newly written code.
  */
 class requestor {
-    std::stringstream query;
-    std::shared_ptr<connector> conn;
-    CassStatement* statement;
-    CassFuture* result_future;
-    const CassResult* result;
-    CassIterator* iterator;
-    const CassRow* row;
+    std::stringstream _query;
+    std::shared_ptr<connector> _conn;
+    CassStatement* _statement;
+    CassFuture* _result_future;
+    const CassResult* _result;
+    CassIterator* _iterator;
+    const CassRow* _row;
 
 public:
     /* Creates a new requestor using connection represented by a given connector */
@@ -31,7 +31,7 @@ public:
     /* Appends new elements to the query string */
     template<typename T>
     requestor& operator<<(T t) {
-        query << t;
+        _query << t;
         return *this;
     }
 
@@ -55,4 +55,4 @@ public:
     ~requestor();
 };
 
-#endif //SCYLLA_MATRIX_TEST_REQUESTOR_H
+#endif //SCYLLA_MATRIX_TEST_REQUESTOR_HH
