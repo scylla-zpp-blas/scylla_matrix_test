@@ -211,7 +211,7 @@ public:
                     }
                     if (i == _f_block.size()) {
                         std::cerr << "elo first cond\n";
-                        _f_block = get_block(_f_block[i - 1].j, _f_start->i, 1);
+                        _f_block = get_block(_f_block[i - 1].j + 1, _f_start->i, 1);
                         i = 0;
                         if (_f_block.empty()) {
                             break;
@@ -226,7 +226,7 @@ public:
                     }
                     if (j == _s_block.size()) {
                         std::cerr << "elo second cond\n";
-                        _s_block = get_block(_s_block[j - 1].j, _s_start->i, 2);
+                        _s_block = get_block(_s_block[j - 1].j + 1, _s_start->i, 2);
                         j = 0;
                         if (_s_block.empty()) {
                             break;
