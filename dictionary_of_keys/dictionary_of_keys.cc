@@ -193,6 +193,7 @@ public:
             // Find position of first non-zero transposed column of second matrix.
             auto _s_start = fetch_next_coords(0, 2);
             while (_s_start.has_value()) {
+                std::cerr << "elo1\n";
                 // Multiply row by transposed column.
                 auto _f_block = get_block(_f_start->j, _f_start->i, 1);
                 auto _s_block = get_block(_f_start->j, _s_start->i, 2);
@@ -200,13 +201,16 @@ public:
                 size_t i = 0, j = 0;
 
                 while (true) {
+                    std::cerr << "elo2\n";
                     while (i < _f_block.size() && _f_block[i].j <= _s_block[j].j) {
+                        std::cerr << "elo first\n";
                         if (_f_block[i].j == _s_block[i].j) {
                             _sum += _f_block[i].val * _s_block[i].val;
                         }
                         i++;
                     }
                     if (i == _f_block.size()) {
+                        std::cerr << "elo first cond\n";
                         _f_block = get_block(_f_block[i - 1].j, _f_start->i, 1);
                         i = 0;
                         if (_f_block.empty()) {
@@ -214,12 +218,14 @@ public:
                         }
                     }
                     while (j < _s_block.size() && _s_block[j].j <= _f_block[i].j) {
+                        std::cerr << "elo second\n";
                         if (_s_block[j].j == _f_block[i].j) {
                             _sum += _s_block[j].val * _f_block[i].val;
                         }
                         j++;
                     }
                     if (j == _s_block.size()) {
+                        std::cerr << "elo second cond\n";
                         _s_block = get_block(_s_block[j - 1].j, _s_start->i, 2);
                         j = 0;
                         if (_s_block.empty()) {
