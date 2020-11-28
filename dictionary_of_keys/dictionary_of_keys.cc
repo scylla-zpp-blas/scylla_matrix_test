@@ -182,6 +182,7 @@ public:
         submit_block(_block, _matrix_id);
     }
 
+    // TODO wrap dynamically loaded vectors into abstraction, make this function simpler.
     /* Multiplies two matrices loaded into Scylla with load_matrix. */
     void multiply() override {
         size_t _width = std::min(_first_matrix_width, _second_matrix_width);
@@ -193,7 +194,6 @@ public:
             // Find position of first non-zero transposed column of second matrix.
             auto _s_start = fetch_next_coords(0, 2);
             while (_s_start.has_value()) {
-                std::cerr << "elo1\n";
                 // Multiply row by transposed column.
                 auto _f_block = get_block(_f_start->j, _f_start->i, 1);
                 auto _s_block = get_block(_f_start->j, _s_start->i, 2);
@@ -201,16 +201,13 @@ public:
                 size_t i = 0, j = 0;
 
                 while (!(_f_block.empty() or _s_block.empty())) {
-                    std::cerr << "elo2\n";
                     while (i < _f_block.size() && _f_block[i].j <= _s_block[j].j) {
-                        std::cerr << "elo first\n";
                         if (_f_block[i].j == _s_block[i].j) {
                             _sum += _f_block[i].val * _s_block[i].val;
                         }
                         i++;
                     }
                     if (i == _f_block.size()) {
-                        std::cerr << "elo first cond\n";
                         _f_block = get_block(_f_block[i - 1].j + 1, _f_start->i, 1);
                         i = 0;
                         if (_f_block.empty()) {
@@ -218,14 +215,12 @@ public:
                         }
                     }
                     while (j < _s_block.size() && _s_block[j].j <= _f_block[i].j) {
-                        std::cerr << "elo second\n";
                         if (_s_block[j].j == _f_block[i].j) {
                             _sum += _s_block[j].val * _f_block[i].val;
                         }
                         j++;
                     }
                     if (j == _s_block.size()) {
-                        std::cerr << "elo second cond\n";
                         _s_block = get_block(_s_block[j - 1].j + 1, _s_start->i, 2);
                         j = 0;
                         if (_s_block.empty()) {
@@ -270,7 +265,7 @@ int main(int argc, char* argv[]) {
 
     size_t DIMENSION = 4;
     multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 2137, factory));
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 2137, factory));
+    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 7, 2138, factory));
 
     multiplicator_instance.multiply();
 
