@@ -99,9 +99,14 @@ public:
                                                                                  "};";
         namespace_query.send();
 
-        requestor table_erase(_conn);
-        table_erase << "DROP TABLE " << _KEYSPACE_NAME << "." << _TABLE_NAME << ";";
-        table_erase.send();
+        try {
+            requestor table_erase(_conn);
+            table_erase << "DROP TABLE " << _KEYSPACE_NAME << "." << _TABLE_NAME << ";";
+            table_erase.send();
+        }
+        catch (std::runtime_error &e) {
+            std::cerr << "Drop table error: " << e.what() << std::endl;
+        }
 
         requestor table_query(_conn);
         table_query << "CREATE TABLE " << _KEYSPACE_NAME << "." << _TABLE_NAME << " ("
@@ -220,7 +225,7 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<connector> conn;
 
     try {
-        conn = std::make_shared<connector>("192.168.1.146");
+        conn = std::make_shared<connector>("172.17.0.2");
         std::cout << "Connected" << std::endl;
     } catch (...) {
         std::cout << "Connection error" << std::endl;
