@@ -115,7 +115,7 @@ public:
                                                                                   "    pos_y bigint, "
                                                                                   "    pos_x bigint, "
                                                                                   "    val double, "
-                                                                                  "    PRIMARY KEY (matrix_id, pos_x, pos_y) "
+                                                                                  "    PRIMARY KEY (matrix_id, pos_y, pos_x) "
                                                                                   ") WITH CLUSTERING ORDER BY (pos_y ASC, pos_x ASC);";
         table_query.send();
     }
