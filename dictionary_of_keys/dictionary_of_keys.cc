@@ -90,7 +90,7 @@ private:
         requestor query(_conn);
         query << "SELECT * FROM " << _KEYSPACE_NAME << "." << _TABLE_NAME
               << " WHERE pos_x>=" << min_pos_x << " AND pos_y=" << pos_y << " AND matrix_id=" << matrix_id
-              << " LIMIT" << _BLOCK_SIZE << ";";
+              << " LIMIT " << _BLOCK_SIZE << ";";
         query.send();
 
         std::vector<matrix_value<T>> ret;
