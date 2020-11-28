@@ -247,6 +247,28 @@ public:
         }
         return 0;
     }
+
+    void print_all() {
+        requestor query(_conn);
+        query << "SELECT * FROM " << _KEYSPACE_NAME << "." << _TABLE_NAME
+              << " WHERE matrix_id=" << result_id
+              << " LIMIT " << _BLOCK_SIZE << ";";
+        query.send();
+
+        while (query.next_row()) {
+            const CassValue* _cass_pos_x = query.get_column("pos_x");
+            const CassValue* _cass_pos_y = query.get_column("pos_y");
+            const CassValue* _cass_val = query.get_column("val");
+            cass_int64_t _pos_x, _pos_y;
+            cass_double_t _val;
+
+            cass_value_get_int64(_cass_pos_x, &_pos_x);
+            cass_value_get_int64(_cass_pos_y, &_pos_y);
+            cass_value_get_double(_cass_val, &_val);
+            
+            std::cout << "(" << _pos_y << ", " << _pos_x << "): "  << _val << std::endl;
+        }
+    }
 };
 
 int main(int argc, char* argv[]) {
@@ -269,14 +291,6 @@ int main(int argc, char* argv[]) {
 
     multiplicator_instance.multiply();
 
-    for (int i = 1; i <= DIMENSION; i++) {
-        for (int j = 1; j <= DIMENSION; j++) {
-            auto result = multiplicator_instance.get_result({i, j});
-            if (result != 0) {
-                std::cout << "(" << i << ", " << j << "): "  << result << std::endl;
-            }
-        }
-    }
-
+    multiplicator_instance.print_all();
     return 0;
 }
