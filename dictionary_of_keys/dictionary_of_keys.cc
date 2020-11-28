@@ -106,7 +106,7 @@ private:
             cass_value_get_int64(_cass_pos_y, &_pos_y);
             cass_value_get_double(_cass_val, &_val);
 
-            ret.emplace_back(_pos_x, _pos_y, _val);
+            ret.emplace_back(_pos_y, _pos_x, _val);
         }
 
         return ret;
