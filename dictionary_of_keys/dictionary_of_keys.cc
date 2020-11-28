@@ -265,7 +265,7 @@ public:
             cass_value_get_int64(_cass_pos_x, &_pos_x);
             cass_value_get_int64(_cass_pos_y, &_pos_y);
             cass_value_get_double(_cass_val, &_val);
-            
+
             std::cout << "(" << _pos_y << ", " << _pos_x << "): "  << _val << std::endl;
         }
     }
@@ -285,9 +285,9 @@ int main(int argc, char* argv[]) {
     std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 2137);
     dok<float> multiplicator_instance(conn);
 
-    size_t DIMENSION = 4;
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 2137, factory));
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 7, 2138, factory));
+    size_t DIMENSION = 2000;
+    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 50, 2137, factory));
+    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 50, 2138, factory));
 
     multiplicator_instance.multiply();
 
