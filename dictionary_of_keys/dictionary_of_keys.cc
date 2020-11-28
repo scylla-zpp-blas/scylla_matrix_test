@@ -28,7 +28,7 @@ private:
 
         for (auto val: block) {
             requestor query(_conn);
-            query << "INSERT INTO " << _KEYSPACE_NAME << "." << _TABLE_NAME << " (matrix_id, pos_x, pos_y, val) "
+            query << "INSERT INTO " << _KEYSPACE_NAME << "." << _TABLE_NAME << " (matrix_id, pos_y, pos_x, val) "
                                                                                "   VALUES ("
                                                                                << matrix_id << ", "
                                                                                << val.i << ", "
@@ -112,8 +112,8 @@ public:
         requestor table_query(_conn);
         table_query << "CREATE TABLE " << _KEYSPACE_NAME << "." << _TABLE_NAME << " ("
                                                                                   "    matrix_id int, "
-                                                                                  "    pos_x bigint, "
                                                                                   "    pos_y bigint, "
+                                                                                  "    pos_x bigint, "
                                                                                   "    val double, "
                                                                                   "    PRIMARY KEY (matrix_id, pos_x, pos_y) "
                                                                                   ") WITH CLUSTERING ORDER BY (pos_y ASC, pos_x ASC);";
