@@ -105,7 +105,8 @@ public:
             table_erase.send();
         }
         catch (std::runtime_error &e) {
-            std::cerr << "Drop table error: " << e.what() << std::endl;
+            std::cerr << "Drop table error: ";
+            std::cerr << e.what() << std::endl;
         }
 
         requestor table_query(_conn);
