@@ -165,7 +165,7 @@ public:
 
         while (gen.has_next()) {
             matrix_value<T> _next = gen.next();
-            std::cout << _next.i << " " << _next.j << " " << gen.has_next() << std::endl;
+            std::cout << _next.i << " " << _next.j << " " << _next.val << " " << gen.has_next() << std::endl;
 
             if (transpose) {
                 std::swap(_next.i, _next.j);
@@ -261,7 +261,7 @@ int main(int argc, char* argv[]) {
     std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 2137);
     dok<float> multiplicator_instance(conn);
 
-    size_t DIMENSION = 3;
+    size_t DIMENSION = 4;
     multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 0, factory));
     multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 1, factory));
 
