@@ -12,7 +12,7 @@ std::ostream& operator<<(std::ostream& os, requestor& r) {
 }
 
 void requestor::send() {
-    std::cerr << query.str() << std::endl;
+    // std::cerr << query.str() << std::endl;
 
     statement = cass_statement_new(query.str().c_str(), 0);
     cass_statement_set_consistency(statement, CASS_CONSISTENCY_QUORUM);

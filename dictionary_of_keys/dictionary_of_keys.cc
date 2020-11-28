@@ -229,9 +229,11 @@ public:
                     }
                 }
 
-                std::vector<matrix_value<T>> _upload_block;
-                _upload_block.emplace_back(_f_start->i, _s_start->i, _sum);
-                submit_block(_upload_block, result_id);
+                if (_sum != 0) {
+                    std::vector<matrix_value<T>> _upload_block;
+                    _upload_block.emplace_back(_f_start->i, _s_start->i, _sum);
+                    submit_block(_upload_block, result_id);
+                }
 
                 _s_start = fetch_next_coords(_s_start->i + 1, 2);
             }
