@@ -200,7 +200,7 @@ public:
                 T _sum = 0;
                 size_t i = 0, j = 0;
 
-                while (true) {
+                while (!(_f_block.empty() or _s_block.empty())) {
                     std::cerr << "elo2\n";
                     while (i < _f_block.size() && _f_block[i].j <= _s_block[j].j) {
                         std::cerr << "elo first\n";
