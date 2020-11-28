@@ -101,7 +101,7 @@ public:
 
         try {
             requestor table_erase(_conn);
-            table_erase << "DROP TABLE " << _KEYSPACE_NAME << "." << _TABLE_NAME << ";";
+            table_erase << "DROP IF EXISTS TABLE " << _KEYSPACE_NAME << "." << _TABLE_NAME << ";";
             table_erase.send();
         }
         catch (std::runtime_error &e) {
