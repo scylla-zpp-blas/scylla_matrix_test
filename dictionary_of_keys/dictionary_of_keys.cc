@@ -146,6 +146,7 @@ public:
 
     void load_matrix(matrix_value_generator<T>&& gen) override {
         _matrix_id++;
+        std::cerr << "Load matrix " << _matrix_id << std::endl;
 
         bool transpose;
 
@@ -257,7 +258,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 0);
+    std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 2137);
     dok<float> multiplicator_instance(conn);
 
     size_t DIMENSION = 3;
