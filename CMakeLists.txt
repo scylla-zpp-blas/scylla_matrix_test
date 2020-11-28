@@ -21,14 +21,14 @@ set(GENERATOR_SRC
 
 set(UTILS_SRC
         utils/connector.hh
-        utils/connector.cpp
+        utils/connector.cc
         utils/int_math.hh
         utils/int_math.cc
         utils/requestor.hh
-        utils/requestor.cpp
+        utils/requestor.cc
         )
 
-add_executable(scylla_matrix_test main.cpp "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
+add_executable(scylla_matrix_test main.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
 target_link_libraries(scylla_matrix_test cassandra)
 
 add_executable(simple_test simple_test.cpp coordinate_list/coordinate_list.hh "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
