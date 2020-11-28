@@ -262,8 +262,8 @@ int main(int argc, char* argv[]) {
     dok<float> multiplicator_instance(conn);
 
     size_t DIMENSION = 4;
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 0, factory));
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 1, factory));
+    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 2137, factory));
+    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(DIMENSION, DIMENSION, 5, 2137, factory));
 
     multiplicator_instance.multiply();
 
