@@ -1,26 +1,20 @@
 #include <cassandra.h>
-#include <iostream>
-#include <cstdlib>
 #include <memory>
-#include <string>
 #include <random>
 #include <map>
-#include "../multiplicator.h"
-#include "../utils/connector.h"
-#include "../utils/requestor.h"
-#include "../float_value_factory.hh"
-#include "../sparse_matrix_value_generator.hh"
-
-static int dimension = 5;
+#include "../multiplicator.hh"
+#include "../utils/connector.hh"
+#include "../utils/requestor.hh"
 
 template<typename T>
 class CSR : public multiplicator<T> {
     const std::string _namespace = "zpp";
     const std::string _table_name_values = "csr_test_matrix_values";
     const std::string _table_name_rows = "csr_test_matrix_rows";
+    const size_t _result_id = 100;
     std::shared_ptr<connector> _conn;
     size_t _matrix_id;
-    size_t result_id = 100;
+    size_t _dimension;
 
     int get_row_begin(int row_num, int matrix_id) {
         requestor query_row_begin(_conn);
@@ -58,7 +52,7 @@ class CSR : public multiplicator<T> {
     }
 
 public:
-    CSR(std::shared_ptr<connector> conn) : _conn(conn), _matrix_id(0) {
+    CSR(std::shared_ptr<connector> conn) : _conn(conn), _matrix_id(0), _dimension(0) {
         /* Make sure that the necessary namespaces and table exist */
 
         requestor namespace_query(_conn);
@@ -98,6 +92,11 @@ public:
     }
 
     void load_matrix(matrix_value_generator<T>&& gen) {
+        if (gen.width() != gen.height() || _dimension != 0 && gen.width() != _dimension) {
+            throw std::runtime_error("Wrong matrix size of " + std::to_string(gen.height()) + "x" + std::to_string(gen.width()));
+        }
+
+        _dimension = gen.width();
         _matrix_id++;
         size_t last_row = 0;
         size_t generated = 0;
@@ -116,7 +115,7 @@ public:
             }
             generated++;
         }
-        while (last_row <= dimension) {
+        while (last_row <= _dimension) {
             last_row++;
             requestor query_rows(_conn);
             query_rows << "INSERT INTO " << _namespace << "." << _table_name_rows << " (matrix_id, row, idx) VALUES("
@@ -131,11 +130,11 @@ public:
         size_t second_id = _matrix_id;
         int curr_elems = 0;
 
-        for (int row = 1; row <= dimension; row++) {
+        for (int row = 1; row <= _dimension; row++) {
             std::map<int, matrix_value<T>> row_result;
             requestor query_rows(_conn);
             query_rows << "INSERT INTO " << _namespace << "." << _table_name_rows << " (matrix_id, row, idx) VALUES("
-                       << result_id << ", " << row << ", " << curr_elems << ");\n";
+                       << _result_id << ", " << row << ", " << curr_elems << ");\n";
             query_rows.send();
 
             std::vector<matrix_value<T>> row_first = get_row(row, first_id);
@@ -155,20 +154,20 @@ public:
                 matrix_value<T> val_res = elem_res.second;
                 requestor query(_conn);
                 query << "INSERT INTO " << _namespace << "." << _table_name_values << " (matrix_id, idx, column, value) VALUES("
-                      << result_id << ", " << curr_elems << ", " << val_res.j << ", " << val_res.val << ");\n";
+                      << _result_id << ", " << curr_elems << ", " << val_res.j << ", " << val_res.val << ");\n";
                 query.send();
                 curr_elems++;
             }
         }
         requestor last_query_rows(_conn);
         last_query_rows << "INSERT INTO " << _namespace << "." << _table_name_rows << " (matrix_id, row, idx) VALUES("
-                        << result_id << ", " << dimension+1 << ", " << curr_elems << ");\n";
+                        << _result_id << ", " << _dimension+1 << ", " << curr_elems << ");\n";
         last_query_rows.send();
     }
 
     /* Obtains the value in the multiplication result at (x; y) = (pos.first; pos.second) */
     T get_result(std::pair<size_t, size_t> pos) {
-        std::vector<matrix_value<T>> row = get_row(pos.first, result_id);
+        std::vector<matrix_value<T>> row = get_row(pos.first, _result_id);
         for (auto val : row) {
             if (val.j == pos.second) {
                 return val.val;
@@ -177,34 +176,3 @@ public:
         return 0;
     }
 };
-
-int main(int argc, char* argv[]) {
-    std::shared_ptr<connector> conn;
-
-    try {
-        conn = std::make_shared<connector>("172.17.0.2");
-        std::cout << "Connected" << std::endl;
-    } catch (...) {
-        std::cout << "Connection error" << std::endl;
-        exit(1);
-    }
-
-    std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 0);
-    CSR<float> multiplicator_instance(conn);
-
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, 15, 0, factory));
-    multiplicator_instance.load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, 15, 1, factory));
-
-    multiplicator_instance.multiply();
-
-    for (int i = 1; i <= dimension; i++) {
-        for (int j = 1; j <= dimension; j++) {
-            auto result = multiplicator_instance.get_result({i, j});
-            if (result != 0) {
-                std::cout << "(" << i << ", " << j << "): "  << result << std::endl;
-            }
-        }
-    }
-
-    return 0;
-}
