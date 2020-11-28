@@ -38,10 +38,34 @@ private:
         }
     }
 
-    inline std::optional<matrix_value<T>> fetch_next_coords(size_t min_pos_x, size_t min_pos_y, size_t matrix_id) {
+    inline std::optional<matrix_value<T>> fetch_next_coords(size_t min_pos_y, size_t matrix_id) {
         requestor query(_conn);
         query << "SELECT * FROM " << _KEYSPACE_NAME << "." << _TABLE_NAME
-              << " WHERE pos_x>=" << min_pos_y << " AND pos_y>=" << min_pos_y << " AND matrix_id=" << matrix_id
+              << " WHERE pos_y>=" << min_pos_y << " AND matrix_id=" << matrix_id
+              << " LIMIT " << 1 << ";";
+        query.send();
+
+        if (query.next_row()) {
+            const CassValue* _cass_pos_x = query.get_column("pos_x");
+            const CassValue* _cass_pos_y = query.get_column("pos_y");
+            const CassValue* _cass_val = query.get_column("val");
+            cass_int64_t _pos_x, _pos_y;
+            cass_double_t _val;
+
+            cass_value_get_int64(_cass_pos_x, &_pos_x);
+            cass_value_get_int64(_cass_pos_y, &_pos_y);
+            cass_value_get_double(_cass_val, &_val);
+
+            return std::make_optional(matrix_value<T>(_pos_x, _pos_y, _val));
+        }
+
+        return std::nullopt;
+    }
+
+    inline std::optional<matrix_value<T>> fetch_next_coords(size_t min_pos_x, size_t pos_y, size_t matrix_id) {
+        requestor query(_conn);
+        query << "SELECT * FROM " << _KEYSPACE_NAME << "." << _TABLE_NAME
+              << " WHERE pos_x>=" << min_pos_x << " AND pos_y=" << pos_y << " AND matrix_id=" << matrix_id
               << " LIMIT " << 1 << ";";
         query.send();
 
@@ -162,14 +186,14 @@ public:
         size_t _height = std::min(_first_matrix_height, _second_matrix_height);
 
         // Find position of first non-zero row of first matrix.
-        auto _f_start = fetch_next_coords(0, 0, 1);
+        auto _f_start = fetch_next_coords(0, 1);
         while (_f_start.has_value()) {
             // Find position of first non-zero transposed column of second matrix.
-            auto _s_start = fetch_next_coords(_f_start->j, 0, 2);
+            auto _s_start = fetch_next_coords(0, 2);
             while (_s_start.has_value()) {
                 // Multiply row by transposed column.
                 auto _f_block = get_block(_f_start->j, _f_start->i, 1);
-                auto _s_block = get_block(_s_start->j, _s_start->i, 2);
+                auto _s_block = get_block(_f_start->j, _s_start->i, 2);
                 T _sum = 0;
                 size_t i = 0, j = 0;
 
@@ -206,16 +230,16 @@ public:
                 _upload_block.emplace_back(_f_start->i, _s_start->i, _sum);
                 submit_block(_upload_block, result_id);
 
-                _s_start = fetch_next_coords(_f_start->j, _s_start->i + 1, 2);
+                _s_start = fetch_next_coords(_s_start->i + 1, 2);
             }
-            _f_start = fetch_next_coords(0, _f_start->i + 1, 1);
+            _f_start = fetch_next_coords(_f_start->i + 1, 1);
         }
     }
 
     /* Obtains the value in the multiplication result at (x; y) = (pos.first; pos.second) */
     T get_result(std::pair<size_t, size_t> pos) override {
         auto result = fetch_next_coords(pos.first, pos.second, result_id);
-        if (!result.has_value() && result->j == pos.first && result->i == pos.second) {
+        if (result.has_value() && result->j == pos.first && result->i == pos.second) {
             return result->val;
         }
         return 0;
