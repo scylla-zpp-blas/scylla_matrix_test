@@ -179,6 +179,7 @@ public:
             }
 
         }
+        submit_block(_block, _matrix_id);
     }
 
     /* Multiplies two matrices loaded into Scylla with load_matrix. */
