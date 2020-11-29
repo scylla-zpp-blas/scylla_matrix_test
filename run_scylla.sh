@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# ===================================================
-# Boilerplate for parsing options
-# ===================================================
+# =================================================================================
+# Boilerplate for parsing options, mostly from https://stackoverflow.com/a/29754866
+# =================================================================================
 
 # -allow a command to fail with !’s side effect on errexit
 # -use return value from ${PIPESTATUS[0]}, because ! hosed $?
@@ -49,7 +49,7 @@ function help {
 instances=2
 data_folder=""
 
-# now enjoy the options in order and nicely split until we see --
+
 while true; do
     case "$1" in
         -h|--help)
