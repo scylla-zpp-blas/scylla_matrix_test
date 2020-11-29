@@ -15,8 +15,8 @@ fi
 # ===================================================
 # List of possible options (both short and long form)
 # ===================================================
-OPTIONS=hn:
-LONGOPTS=help,number:,data:
+OPTIONS=hn:d:
+LONGOPTS=help,number:,data:,smp:,nodev
 
 # -regarding ! and PIPESTATUS see above
 # -temporarily store output to be able to check for errors
@@ -41,6 +41,8 @@ function help {
     echo -e "\nOptions:"
     echo -e "  -d, --data        Location of folder with data of cluster"
     echo -e "  -n, --number      Amount of instances to run (default: 3)"
+    echo -e "      --smp         How many cores to use per instance (default: 2)"
+    echo -e "      --nodev       Disable developer mode (you probably don't want this)"
     exit 0
 }
 
@@ -48,7 +50,8 @@ function help {
 
 instances=2
 data_folder=""
-
+smp=2
+dev=1
 
 while true; do
     case "$1" in
@@ -63,6 +66,14 @@ while true; do
         -d|--data)
             data_folder="$2"
             shift 2
+            ;;
+        --smp)
+            smp=$2
+            shift 2
+            ;;
+        --nodev)
+            dev=0
+            shift
             ;;
         --)
             shift
@@ -109,22 +120,37 @@ cleanup_silent
 trap cleanup SIGINT
 
 echo "Creating docker network"
-docker network create --driver bridge scylla_zpp
+docker network create --driver bridge --subnet 172.19.0.0/16 scylla_zpp
+
+if [ -n "$data_folder" ];
+then
+    if [ ! -d "$data_folder" ]; then
+        echo "Directory not found: $data_folder"
+        exit 1
+    fi
+    for i in $(seq 1 $instances); do
+        mkdir -p "$data_folder/node_$i"
+    done
+
+    data_folder="$(readlink -f "$data_folder")"
+fi
 
 echo "Starting scylla instances"
 for i in $(seq 1 $instances); do
     name="scylla_zpp_$i"
     seeds="$(get_first_ip)"
-    mount_arg="$([ -n "$data_folder" ] && echo "-v \"$data_folder/node-$i:/var/lib/scylla\"")"
-    echo "Starting $name with seeds=$seeds"
+    mount_arg="$([ -n "$data_folder" ] && echo "$data_folder/node_$i:/var/lib/scylla")"
+    echo "Starting $name with seeds=$seeds and mount=$mount_arg"
 
     docker run \
         --rm \
         --name "$name" \
         --network scylla_zpp \
+        ${mount_arg:+'-v' "$mount_arg"} \
         -d scylladb/scylla \
-        --seeds="$seeds" \
-        ${mount_arg:+"$mount_arg"}
+        ${seeds:+'--seeds' "$seeds"} \
+        --smp "$smp" \
+        --developer-mode="$dev"
 done
 
 echo "Scylla cluster started!"
