@@ -6,9 +6,9 @@
 #include <string>
 #include <random>
 #include <optional>
-#include "../multiplicator.h"
-#include "../utils/connector.h"
-#include "../utils/requestor.h"
+#include "../multiplicator.hh"
+#include "../utils/connector.hh"
+#include "../utils/requestor.hh"
 #include "../float_value_factory.hh"
 #include "../sparse_matrix_value_generator.hh"
 
