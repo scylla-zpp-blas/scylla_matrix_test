@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <set>
+#include <vector>
 
 #include "cassandra.h"
 #include "fmt/format.h"
@@ -96,6 +97,24 @@ namespace {
     template<typename Type>
     struct statement_binder_helper<std::set<Type>> {
         static void bind_to_statement(CassStatement* statement, size_t index, const std::set<Type>& value) {
+            CassCollection *set = cass_collection_new(CASS_COLLECTION_TYPE_SET, value.size());
+            auto cleanup = [=]() { cass_collection_free(set); };
+            for(const auto& it : value) {
+                try {
+                    append_to_collection(set, it);
+                } catch(const scd_exception& e) {
+                    cleanup();
+                    throw e;
+                }
+            }
+            cass_statement_bind_collection(statement, index, set);
+            cleanup();
+        }
+    };
+
+    template<typename Type>
+    struct statement_binder_helper<std::vector<Type>> {
+        static void bind_to_statement(CassStatement* statement, size_t index, const std::vector<Type>& value) {
             CassCollection *set = cass_collection_new(CASS_COLLECTION_TYPE_SET, value.size());
             auto cleanup = [=]() { cass_collection_free(set); };
             for(const auto& it : value) {

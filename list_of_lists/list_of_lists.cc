@@ -3,9 +3,9 @@
 #include <string>
 #include <utility>
 #include <set>
+#include <vector>
 
 #include <cassandra.h>
-#include <unordered_map>
 #include "fmt/format.h"
 
 #include "../float_value_factory.hh"
@@ -98,12 +98,24 @@ UPDATE {0}.{1} SET filled = ?, {{}} = ?, {{}} = ? WHERE matrix_id = ? AND column
 SELECT row FROM {0}.{1} WHERE matrix_id = ?;
 )", namespace_name, table_name_rows);
 
+    const std::string matrix_fetch_column_list = fmt::format(R"(
+SELECT column FROM {0}.{1} WHERE matrix_id = ?;
+)", namespace_name, table_name_columns);
+
     const std::string matrix_fetch_row_part = fmt::format(R"(
 SELECT * FROM {0}.{1} WHERE matrix_id = ? AND row = ? AND part = ?;
 )", namespace_name, table_name_rows);
 
     const std::string matrix_fetch_column_part = fmt::format(R"(
 SELECT * FROM {0}.{1} WHERE matrix_id = ? AND column = ? AND part = ?;
+)", namespace_name, table_name_columns);
+
+    const std::string matrix_fetch_whole_row = fmt::format(R"(
+SELECT * FROM {0}.{1} WHERE matrix_id = ? AND row = ?;
+)", namespace_name, table_name_rows);
+
+    const std::string matrix_fetch_whole_column = fmt::format(R"(
+SELECT * FROM {0}.{1} WHERE matrix_id = ? AND column = ?;
 )", namespace_name, table_name_columns);
 
     const std::string fetch_whole_matrix_query = R"(
@@ -125,6 +137,7 @@ DROP TABLE IF EXISTS {}.{};
 
 template<typename T>
 class LIL {
+    using row_data_t = std::vector<std::tuple<int64_t, T>>;
     std::shared_ptr<scd_session> _sess;
     std::vector<std::string> _data_columns;
 
@@ -179,17 +192,13 @@ public:
 
     // Loads matrix from generator to database. Return matrix id.
     size_t load_matrix(matrix_value_generator<T>&& gen) {
-        int32_t new_id = get_new_matrix_id() + 1;
-        int64_t height = gen.height();
-        int64_t width = gen.width();
-        _sess->execute(scd_statement(new_matrix_meta_query, 3).bind(new_id, height, width));
+        int32_t new_id = register_new_matrix(gen.height(), gen.width());
         std::set<int64_t> columns = generate_row_matrix(new_id, std::move(gen));
         create_column_matrix(new_id, columns);
-
         return new_id;
     }
 
-    void delete_matrix(int64_t id) {
+    void delete_matrix(int32_t id) {
         _sess->execute(scd_statement(fmt::format(delete_matrix_query, namespace_name, table_name_rows), 1).bind(id));
         _sess->execute(scd_statement(fmt::format(delete_matrix_query, namespace_name, table_name_columns), 1).bind(id));
         _sess->execute(scd_statement(fmt::format(delete_matrix_query, namespace_name, table_name_meta), 1).bind(id));
@@ -197,16 +206,57 @@ public:
 
     /* Multiplies two matrices loaded into Scylla with load_matrix. Returns index of new matrix */
     size_t multiply(size_t a, size_t b) {
-        return 0;
+        const auto& [a_height, a_width] = get_dimensions(a);
+        const auto& [b_height, b_width] = get_dimensions(b);
+        if(a_width != b_height) {
+            throw std::runtime_error("Invalid matrix dimensions, cant multiply");
+        }
+
+        scd_prepared_query insert_row_prepared = get_row_inserter();
+
+        auto a_rows = get_row_list(a);
+        auto b_columns = get_column_list(b);
+
+        int32_t c = register_new_matrix(a_height, b_width);
+
+        std::set<int64_t> columns;
+        row_data_t c_row_data;
+        int64_t part = 0;
+
+        for(auto a_row_idx : a_rows) {
+            row_data_t a_row = get_row(a, a_row_idx);
+            for(auto b_col_idx : b_columns) {
+                columns.emplace(b_col_idx);
+                row_data_t b_col = get_column(b, b_col_idx);
+                T value = multiply_single_cell(a_row, b_col);
+                if(value != 0.0) { // TODO: probably wrong way to do it
+                    if(c_row_data.size() == columns_in_row) {
+                        submit_row_data(insert_row_prepared, c, a_row_idx, part, c_row_data);
+                        c_row_data.clear();
+                        part++;
+                    }
+                    c_row_data.emplace_back(b_col_idx, value);
+                }
+            }
+
+            if(!c_row_data.empty()) {
+                submit_row_data(insert_row_prepared, c, a_row_idx, part, c_row_data);
+                c_row_data.clear();
+            }
+            part = 0;
+        }
+
+        create_column_matrix(c, columns);
+
+        return c;
     }
 
-    std::vector<std::vector<T>> get_matrix(int32_t matrix_id) {
+    std::vector<std::vector<T>> get_matrix_as_dense(int32_t matrix_id) {
         const auto& [height, width] = get_dimensions(matrix_id);
 
         std::vector<std::vector<T>> result(height, std::vector<T>(width, 0.0));
         auto query_result = _sess->execute(scd_statement(fmt::format(fetch_whole_matrix_query, namespace_name, table_name_rows), 1).bind(matrix_id));
 
-        size_t current_row = 1, current_column = 1;
         while(query_result.next_row()) {
             auto r_row = query_result.get_column<int64_t>("row");
             auto filled = query_result.get_column<int32_t>("filled");
@@ -222,6 +272,60 @@ public:
 
 
 private:
+    T multiply_single_cell(const row_data_t& row, const row_data_t& column) {
+        T result = 0.0;
+
+        int32_t i = 0, j = 0;
+        while(i < row.size() && j < column.size()) {
+            const auto &[row_i, row_v] = row[i];
+            const auto &[col_i, col_v] = column[j];
+
+            if(row_i == col_i) {
+                result += row_v * col_v;
+                i++;
+                j++;
+            } else if(row_i < col_i) {
+                i++;
+            } else {
+                j++;
+            }
+        }
+
+        return result;
+    }
+
+    row_data_t db_row_to_row_data(scd_query_result& result) {
+        row_data_t ret;
+        while(result.next_row()) {
+            auto filled = result.get_column<int32_t>("filled");
+            for(int32_t i = 0; i < filled; i++) {
+                // TODO: make sure column order is correct (in case it somehow changes in the future)
+                auto idx = result.get_column<int64_t>(4 + i);
+                T value = result.get_column<double>(4 + columns_in_row + i);
+                ret.emplace_back(idx, value);
+            }
+        }
+
+        return ret;
+    }
+
+    row_data_t get_row(int32_t matrix_id, int64_t row) {
+        auto result = _sess->execute(scd_statement(matrix_fetch_whole_row, 2).bind(matrix_id, row));
+        return db_row_to_row_data(result);
+    }
+
+    row_data_t get_column(int32_t matrix_id, int64_t column) {
+        auto result = _sess->execute(scd_statement(matrix_fetch_whole_column, 2).bind(matrix_id, column));
+        return db_row_to_row_data(result);
+    }
+
+    int32_t register_new_matrix(int64_t height, int64_t width) {
+        int32_t new_id = get_new_matrix_id();
+        _sess->execute(scd_statement(new_matrix_meta_query, 3).bind(new_id, height, width));
+        return new_id;
+    }
+
+
     std::pair<int64_t, int64_t> get_dimensions(int32_t id) {
         auto result = _sess->execute(scd_statement(fetch_matrix_info_query, 1).bind(id));
         if(!result.next_row()) {
@@ -234,56 +338,73 @@ private:
     int32_t get_new_matrix_id() {
         auto res = _sess->execute(get_max_matrix_id_query);
         if(!res.next_row() || res.is_column_null("id")) return 0;
-        return res.get_column<int32_t>("id");
+        return res.get_column<int32_t>("id") + 1;
     }
 
     std::set<int64_t> get_row_list(int32_t matrix_id) {
         auto query_result = _sess->execute(scd_statement(matrix_fetch_row_list, 1).bind(matrix_id));
         std::set<int64_t> rows;
         while(query_result.next_row()) {
-            auto rownum = query_result.get_column<int64_t>("row");
-            rows.insert(rownum);
+            auto row_num = query_result.get_column<int64_t>("row");
+            rows.insert(row_num);
         }
 
         return rows;
     }
 
+    std::set<int64_t> get_column_list(int32_t matrix_id) {
+        auto query_result = _sess->execute(scd_statement(matrix_fetch_column_list, 1).bind(matrix_id));
+        std::set<int64_t> columns;
+        while(query_result.next_row()) {
+            auto col_num = query_result.get_column<int64_t>("column");
+            columns.insert(col_num);
+        }
+
+        return columns;
+    }
+
+    scd_prepared_query get_row_inserter() {
+        scd_prepared_query insert_row_prepared = _sess->prepare(
+                fmt::format(matrix_insert_row_query,
+                            fmt::join(_data_columns, ", "),
+                            fmt::join(std::vector<char>(columns_in_row * 2, '?'), ", ")));
+        return insert_row_prepared;
+    }
+
+    void submit_row_data(scd_prepared_query& prepared_query, int32_t matrix_id, int64_t row, int64_t part, const row_data_t& row_data) {
+        auto stmt = prepared_query.get_statement();
+        stmt.bind(matrix_id, row, part, (int32_t)row_data.size());
+        for(auto entry : row_data) {
+            stmt.bind(std::get<0>(entry), (double)std::get<1>(entry));
+        }
+        _sess->execute(stmt);
+    }
+
     std::set<int64_t> generate_row_matrix(int32_t id, matrix_value_generator<T>&& gen) {
-        std::vector<char> blanks(columns_in_row * 2, '?');
-        scd_prepared_query insert_row_prepared = _sess->prepare(fmt::format(matrix_insert_row_query, fmt::join(_data_columns, ", "), fmt::join(blanks, ", ")));
+        scd_prepared_query insert_row_prepared = get_row_inserter();
 
         std::set<int64_t> columns;
-        std::set<std::tuple<int64_t, double>> row_data;
+        row_data_t row_data;
         int64_t row = 1;
         int64_t part = 0;
 
         while (gen.has_next()) {
             matrix_value<T> next = gen.next();
+            columns.emplace(next.j);
             //fmt::print(stderr, "Next cell: [{}, {}] : {}\n", next.i, next.j, next.val);
-            columns.insert(next.j);
             if(next.i != row || row_data.size() == columns_in_row) {
                 //fmt::print(stderr, "row: {}. part: {}, size: {}, next.i: {}\n", row, part, row_data.size(), next.i);
-                auto stmt = insert_row_prepared.get_statement();
-                stmt.bind(id, row, part, (int32_t)row_data.size());
-                for(auto entry : row_data) {
-                    stmt.bind(std::get<0>(entry), std::get<1>(entry));
-                }
-                _sess->execute(stmt);
+                submit_row_data(insert_row_prepared, id, row, part, row_data);
                 row_data.clear();
                 part = (next.i == row) ? part + 1 : 0;
                 row = next.i;
             }
-            row_data.emplace(next.j, next.val);
+            row_data.emplace_back(next.j, next.val);
 
         }
 
         if(!row_data.empty()) {
-            auto stmt = insert_row_prepared.get_statement();
-            stmt.bind(id, (int64_t)row, part, (int32_t)row_data.size());
-            for(auto entry : row_data) {
-                stmt.bind(std::get<0>(entry), std::get<1>(entry));
-            }
-            _sess->execute(stmt);
+            submit_row_data(insert_row_prepared, id, row, part, row_data);
             row_data.clear();
         }
 
@@ -345,6 +466,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     argv++;
+    argc--;
 
     auto multiplicator = std::make_unique<LIL<float>>(conn);
 
@@ -365,20 +487,25 @@ int main(int argc, char *argv[]) {
         size_t height = std::stoull(argv[2]);
         size_t width = std::stoull(argv[3]);
         size_t values = std::stoull(argv[4]);
-        std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 0);
-        size_t id = multiplicator->load_matrix(sparse_matrix_value_generator<float>(height, width, values, 1, factory));
+        int seed = 1337;
+        if(argc > 5) {
+            seed = std::stoi(argv[5]);
+        }
+        std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, seed);
+        size_t id = multiplicator->load_matrix(sparse_matrix_value_generator<float>(height, width, values, seed * 2, factory));
         fmt::print("Matrix created, id: {}\n", id);
 
     } else if(argv[1] == "delete"s) {
-        size_t id = std::stoull(argv[2]);
+        int32_t id = std::stoi(argv[2]);
         multiplicator->delete_matrix(id);
         fmt::print("Deleted matrix {}\n", id);
 
     } else if(argv[1] == "show"s) {
-        auto result = multiplicator->get_matrix(std::stoi(argv[2]));
+        auto result = multiplicator->get_matrix_as_dense(std::stoi(argv[2]));
         for(auto row : result) {
             fmt::print("[ {:6.3f} ]\n", fmt::join(row, ", "));
         }
+
     } else if(argv[1] == "multiply"s) {
         size_t a = std::stoull(argv[2]);
         size_t b = std::stoull(argv[3]);
