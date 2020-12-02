@@ -15,7 +15,7 @@
 
 
 namespace {
-    constexpr size_t columns_in_row = 7;
+    constexpr size_t columns_in_row = 10;
 
 
     const std::string namespace_name = "zpp";
@@ -102,13 +102,17 @@ SELECT row FROM {0}.{1} WHERE matrix_id = ?;
 SELECT * FROM {0}.{1} WHERE matrix_id = ? AND row = ? AND part = ?;
 )", namespace_name, table_name_rows);
 
-    const std::string matrix_fetch_row = fmt::format(R"(
-SELECT * FROM {0}.{1} WHERE matrix_id = ? AND row = ?;
-)", namespace_name, table_name_rows);
+    const std::string matrix_fetch_column_part = fmt::format(R"(
+SELECT * FROM {0}.{1} WHERE matrix_id = ? AND column = ? AND part = ?;
+)", namespace_name, table_name_columns);
 
     const std::string fetch_whole_matrix_query = R"(
-SELECT * FROM {} WHERE matrix_id = ?;
+SELECT * FROM {}.{} WHERE matrix_id = ?;
 )";
+
+    const std::string fetch_matrix_info_query = fmt::format(R"(
+SELECT * FROM {}.{} WHERE matrix_id = ?;
+)", namespace_name, table_name_meta);
 
     const std::string delete_matrix_query = R"(
 DELETE FROM {}.{} WHERE matrix_id = ?;
@@ -129,6 +133,8 @@ public:
             _sess(std::move(conn)) {
         /* Make sure that the necessary namespaces and table exist */
         _sess->execute(create_keyspace_query);
+
+
         for(size_t i = 0; i < columns_in_row; i++) {
             _data_columns.push_back(fmt::format("i_{}", i));
             _data_columns.push_back(fmt::format("v_{}", i));
@@ -148,10 +154,10 @@ public:
 
         /* =========== CREATE TABLES ========== */
         std::string rows_query = fmt::format(create_rows_table_query, fmt::join(_data_columns_with_types, ", "));
-        fmt::print(rows_query);
+        //fmt::print(rows_query);
         _sess->execute(rows_query);
         std::string cols_query = fmt::format(create_columns_table_query, fmt::join(_data_columns_with_types, ", "));
-        fmt::print(cols_query);
+        //fmt::print(cols_query);
         _sess->execute(cols_query);
         _sess->execute(create_meta_table_query);
     }
@@ -194,16 +200,37 @@ public:
         return 0;
     }
 
-    std::vector<std::vector<T>> get_matrix(int64_t matrix_id) {
-        std::vector<std::vector<T>> result;
-        auto query_result = _sess->execute(scd_statement(fmt::format(fetch_whole_matrix_query, "row", table_name_rows), 1).bind(matrix_id));
+    std::vector<std::vector<T>> get_matrix(int32_t matrix_id) {
+        const auto& [height, width] = get_dimensions(matrix_id);
+
+        std::vector<std::vector<T>> result(height, std::vector<T>(width, 0.0));
+        auto query_result = _sess->execute(scd_statement(fmt::format(fetch_whole_matrix_query, namespace_name, table_name_rows), 1).bind(matrix_id));
+
+        size_t current_row = 1, current_column = 1;
         while(query_result.next_row()) {
-            int64_t row = query_result.get_column<int64_t>("row");
+            auto r_row = query_result.get_column<int64_t>("row");
+            auto filled = query_result.get_column<int32_t>("filled");
+            for(int i = 0; i < filled; i++) {
+                auto r_column = query_result.get_column<int64_t>(_data_columns[2 * i]);
+                T r_value = query_result.get_column<double>(_data_columns[2 * i + 1]);
+                result[r_row - 1][r_column - 1] = r_value;
+            }
         }
+
+        return result;
     }
 
 
 private:
+    std::pair<int64_t, int64_t> get_dimensions(int32_t id) {
+        auto result = _sess->execute(scd_statement(fetch_matrix_info_query, 1).bind(id));
+        if(!result.next_row()) {
+            return {0, 0};
+        }
+        return std::make_pair(result.get_column<int64_t>("height"), result.get_column<int64_t>("width"));
+    }
+
+
     int32_t get_new_matrix_id() {
         auto res = _sess->execute(get_max_matrix_id_query);
         if(!res.next_row() || res.is_column_null("id")) return 0;
@@ -264,8 +291,8 @@ private:
     }
 
     void create_column_matrix(int32_t id, const std::set<int64_t>& columns) {
+        scd_prepared_query _fetch_row_part_prepared  = _sess->prepare(matrix_fetch_row_part);
         scd_prepared_query init_column_prepared = _sess->prepare(matrix_init_column_part);
-        scd_prepared_query fetch_row_part_prepared = _sess->prepare(matrix_fetch_row_part);
 
         // column -> (part, filled)
         std::map<int64_t, std::pair<int64_t, int32_t>> column_info;
@@ -279,7 +306,7 @@ private:
         for(int64_t rownum : rows) {
             int64_t part = 0;
             do {
-                auto result = _sess->execute(fetch_row_part_prepared.get_statement().bind(id, rownum, part));
+                auto result = _sess->execute(_fetch_row_part_prepared.get_statement().bind(id, rownum, part));
                 // SELECT * FROM {0}.{1} WHERE matrix_id = ? AND row = ? AND part = ?;
                 if (!result.next_row()) {
                     break;
@@ -297,7 +324,7 @@ private:
                     }
                     int32_t idx = info->second.second;
                     std::string stmt_str = fmt::format(matrix_append_to_column, _data_columns[2 * idx], _data_columns[2 * idx + 1]);
-                    fmt::print(stmt_str);
+                    //fmt::print(stmt_str);
                     info->second.second++;
                     _sess->execute(scd_statement(stmt_str, 6).bind(info->second.second, rownum, (double)value, id, column, info->second.first));
                 }
@@ -348,7 +375,10 @@ int main(int argc, char *argv[]) {
         fmt::print("Deleted matrix {}\n", id);
 
     } else if(argv[1] == "show"s) {
-
+        auto result = multiplicator->get_matrix(std::stoi(argv[2]));
+        for(auto row : result) {
+            fmt::print("[ {:6.3f} ]\n", fmt::join(row, ", "));
+        }
     } else if(argv[1] == "multiply"s) {
         size_t a = std::stoull(argv[2]);
         size_t b = std::stoull(argv[3]);
