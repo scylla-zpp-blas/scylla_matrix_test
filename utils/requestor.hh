@@ -5,10 +5,11 @@
 #ifndef SCYLLA_MATRIX_TEST_REQUESTOR_HH
 #define SCYLLA_MATRIX_TEST_REQUESTOR_HH
 
-#include "connector.hh"
 #include <iostream>
 #include <memory>
 #include <sstream>
+
+#include "connector.hh"
 
 /* A class providing an additional layer of abstraction
  * for Scylla's C++ driver's query/response mechanism

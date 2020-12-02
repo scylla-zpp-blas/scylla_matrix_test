@@ -88,7 +88,7 @@ done
 
 function cleanup_silent {
     echo -e "\tCleanup: Stopping instances"
-    for i in $(seq 1 $instances); do
+    for i in $(seq 1 20); do
       docker stop "scylla_zpp_$i" &> /dev/null || true
     done
 
