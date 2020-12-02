@@ -40,13 +40,23 @@ add_executable(dok_test dictionary_of_keys/dictionary_of_keys.cc "${BASE_SRC}" "
 target_link_libraries(dok_test cassandra)
 
 
-set(PREPARED_QUERY_SRC
-        list_of_lists/prepared_query.hh
-        list_of_lists/prepared_query.cc
-        list_of_lists/query_result.hh
-        list_of_lists/query_result.cc
+set(SCYLLA_DRIVER
+        list_of_lists/scylla_driver/scd_exceptions.hh
+        list_of_lists/scylla_driver/scd_exceptions.cc
+        list_of_lists/scylla_driver/scd_prepared_query.hh
+        list_of_lists/scylla_driver/scd_prepared_query.cc
+        list_of_lists/scylla_driver/scd_query_result.hh
+        list_of_lists/scylla_driver/scd_query_result.cc
+        list_of_lists/scylla_driver/scd_session.hh
+        list_of_lists/scylla_driver/scd_session.cc
+        list_of_lists/scylla_driver/scd_statement.hh
+        list_of_lists/scylla_driver/scd_statement.cc
+        list_of_lists/scylla_driver/value_converters/collection_appender.hh
+        list_of_lists/scylla_driver/value_converters/statement_binder.hh
+        list_of_lists/scylla_driver/value_converters/tuple_binder.hh
+        list_of_lists/scylla_driver/value_converters/value_retriever.hh
         )
 
-add_executable(lil_test list_of_lists/list_of_lists.cc "${PREPARED_QUERY_SRC}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
+add_executable(lil_test list_of_lists/list_of_lists.cc "${SCYLLA_DRIVER}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
 target_link_libraries(lil_test PUBLIC cassandra fmt::fmt)
 
