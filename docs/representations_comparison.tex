@@ -155,6 +155,47 @@ It is, however, far from useless, as it looks like a fairly convenient way of da
 \pagebreak
 \section{Compressed sparse row}
 
+In the \textbf{compressed sparse row} representation (also known as \textbf{Yale format}) the matrix is represented by three arrays - holding column indices, values and beginnings of consecutive rows respectively.
+
+Currently the Scylla implementation of this representation uses the two following tables:
+
+\begin{lstlisting}[style=SQLStyle]
+CREATE TABLE zpp.csr_test_matrix_values (
+	matrix_id int,
+	idx int,
+	column int,
+	value float,
+	PRIMARY KEY (matrix_id, idx)
+) WITH CLUSTERING ORDER BY (idx ASC);
+\end{lstlisting}
+
+\begin{lstlisting}[style=SQLStyle]
+CREATE TABLE zpp.csr_test_matrix_rows (
+	matrix_id int,
+	row int,
+	idx int,
+	PRIMARY KEY (matrix_id, row)
+) WITH CLUSTERING ORDER BY (row ASC);
+\end{lstlisting}
+
+The first of those tables corresponds to the first two arrays of our representation, the second table corresponds to the row index array. It should be noted that if we want to store matrices of different sizes we would also have to keep track of their dimensions, possibly in a separate table.
+
+Possibly the main advantage of CSR representation is the fact that we can easily retrieve a single row of the matrix. In order to do that we first look up the beginning and the end of a given row in \code{csr\_test\_matrix\_rows} table and then retrieve the values from \code{csr\_test\_matrix\_values} table.
+
+The current implementation contains a separate entry for each non-zero element. Another possibility would be grouping the elements into blocks and holding those as values in the table (similarly to what was done in the implementations of other representations).
+
+In the presented implementation the multiplication is done line by line. In order to construct the $i$th line of the result matrix $AB$ we first load the $i$th row of matrix $A$. Then, for every element $a_{ij}$ of said row we load the corresponding $j$th row of matrix $B$, multiply said row by $a_{ij}$ and add the result to the row we are constructing. After the entire row is constructed its values are inserted into the database.
+
+Here are some of the possible issues with CSR representation:
+\begin{itemize}
+\item Inserting a new value in the middle of an already constructed matrix would require updating several entries in both of the tables which makes it very ineffective. For this reason, when constructing a new CSR matrix incrementally the values should be passed row by row.
+
+\item The representation always takes up $\Theta(n)$ space for the row index array where $n$ is the number of rows. This might be inefficient for matrices in which the number of non-zero entries is relatively small compared to $n$. Using another representation such as \textbf{coordinate list} or \textbf{dictionary of keys} might be preferable in this case.
+\end{itemize}
+
+As already mentioned the main feature of CSR representation is the ability of easily retriving a single row. For this reason the representation is mostly useful in algorithms and applications that naturally use such queries (one possible example could be representing large, immutable sparse graphs as matrices - a single row corresponds to the neighbours of a given vertex). It might be worth comparing this representation with the \textbf{list of lists} representation in such uses.
+
+
 \pagebreak
 \section*{Rubbish bin}
 
