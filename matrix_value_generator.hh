@@ -13,4 +13,6 @@ public:
     virtual size_t height() = 0;
 
     virtual size_t width() = 0;
+
+    virtual ~matrix_value_generator() {};
 };

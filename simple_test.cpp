@@ -3,13 +3,19 @@
 #include "sparse_matrix_value_generator.hh"
 #include "compressed_sparse_row/compressed_sparse_row.hh"
 #include "coordinate_list/coordinate_list.hh"
+#include "dictionary_of_keys/dictionary_of_keys.hh"
 #include <list>
 
-std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals, std::unique_ptr<multiplicator<float>> multiplicator) {
+#define BOOST_TEST_MAIN
+#define BOOST_TEST_MODULE simple_test
+#include <boost/test/unit_test.hpp>
+
+std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals,
+                                                   std::unique_ptr<multiplicator<float>> multiplicator, int seed) {
     std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 0);
 
-    multiplicator->load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, vals, 0, factory));
-    multiplicator->load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, vals, 1, factory));
+    multiplicator->load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, vals, seed, factory));
+    multiplicator->load_matrix(sparse_matrix_value_generator<float>(dimension, dimension, vals, 18121 * seed + 12, factory));
 
     multiplicator->multiply();
 
@@ -27,48 +33,73 @@ std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals
     return ret;
 }
 
-int main(int argc, char* argv[]) {
-    std::shared_ptr<connector> conn;
+std::list<std::list<matrix_value<float>>> get_all_results(size_t dimension, size_t vals,
+                                                          std::shared_ptr<connector> conn, int seed) {
 
-    try {
-        conn = std::make_shared<connector>("172.17.0.2");
-        std::cerr << "Connected" << std::endl;
-    } catch (...) {
-        std::cerr << "Connection error" << std::endl;
-        exit(1);
+    std::vector<std::unique_ptr<multiplicator<float>>> multiplicators;
+    multiplicators.emplace_back(std::make_unique<COO<float>>(conn));
+    multiplicators.emplace_back(std::make_unique<CSR<float>>(conn));
+    multiplicators.emplace_back(std::make_unique<DOK<float>>(conn));
+
+    std::list<std::list<matrix_value<float>>> results;
+    for (auto &m : multiplicators) {
+        results.push_back(get_multiplied_vals(dimension, vals, std::move(m), seed));
     }
 
-    auto vals_1 = get_multiplied_vals(100, 200, std::make_unique<COO<float>>(conn));
-    auto vals_2 = get_multiplied_vals(100, 200, std::make_unique<CSR<float>>(conn));
+    return results;
+}
+BOOST_TEST_SPECIALIZED_COLLECTION_COMPARE(std::list<matrix_value<float>>)
 
-    auto it_1 = vals_1.begin();
-    auto it_2 = vals_2.begin();
-    const double eps = 1e-2;
+BOOST_AUTO_TEST_SUITE(simple_cross_antitest)
+    BOOST_AUTO_TEST_CASE(coo_vs_csr_fail) {
+        std::shared_ptr<connector> conn = std::make_shared<connector>("172.17.0.2");
+        auto vals_1 = get_multiplied_vals(10, 10, std::make_unique<COO<float>>(conn), 1);
+        auto vals_2 = get_multiplied_vals(10, 10, std::make_unique<CSR<float>>(conn), 111);
 
-    while (it_1 != vals_1.end() && it_2 != vals_2.end()) {
-        auto p1 = std::make_pair(it_1->i, it_1->j);
-        auto p2 = std::make_pair(it_2->i, it_2->j);
+        BOOST_TEST(vals_1 != vals_2);
+    }
+BOOST_AUTO_TEST_SUITE_END()
 
-        if (p1 == p2) {
-            if (abs(it_1->val - it_2->val) > eps) {
-                std::cout << "Wrong value! (" << it_1->i << ", " << it_1->j << ") = "
-                          << it_1->val << " or " << it_2->val << "?" << std::endl;
-            }
+BOOST_AUTO_TEST_SUITE(simple_cross_test)
+    BOOST_AUTO_TEST_CASE(coo_vs_csr1) {
+        std::shared_ptr<connector> conn = std::make_shared<connector>("172.17.0.2");
+        auto results = get_all_results(10, 10, conn, 1);
+
+        auto it_1 = results.begin();
+        auto it_2 = ++results.begin();
+
+        while (it_2 != results.end()) {
+            BOOST_TEST(*it_1 == *it_2);
             it_1++;
             it_2++;
-        } else {
-            if (p1 < p2) {
-                std::cout << "Spare entry in COO result: (" << it_1->i << ", " << it_1->j << ") = " << it_1->val
-                          << std::endl;
-                it_1++;
-            }
-            else {
-                std::cout << "Spare entry in CSR result: (" << it_2->i << ", " << it_2->j << ") = " << it_2->val
-                          << std::endl;
-                it_2++;
-            }
         }
     }
 
-    return 0;
-}
+    BOOST_AUTO_TEST_CASE(coo_vs_csr2) {
+        std::shared_ptr<connector> conn = std::make_shared<connector>("172.17.0.2");
+        auto results = get_all_results(20, 20, conn, 3);
+
+        auto it_1 = results.begin();
+        auto it_2 = ++results.begin();
+
+        while (it_2 != results.end()) {
+            BOOST_TEST(*it_1 == *it_2);
+            it_1++;
+            it_2++;
+        }
+    }
+
+    BOOST_AUTO_TEST_CASE(coo_vs_csr3) {
+        std::shared_ptr<connector> conn = std::make_shared<connector>("172.17.0.2");
+        auto results = get_all_results(6, 30, conn, 42);
+
+        auto it_1 = results.begin();
+        auto it_2 = ++results.begin();
+
+        while (it_2 != results.end()) {
+            BOOST_TEST(*it_1 == *it_2);
+            it_1++;
+            it_2++;
+        }
+    }
+BOOST_AUTO_TEST_SUITE_END()

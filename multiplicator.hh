@@ -21,6 +21,8 @@ public:
 
     /* Obtains the value in the multiplication result at (x; y) = (pos.first; pos.second) */
     virtual T get_result(std::pair<size_t, size_t> pos) = 0;
+
+    virtual ~multiplicator() {};
 };
 
 #endif //SCYLLA_MATRIX_TEST_MULTIPLICATOR_HH
