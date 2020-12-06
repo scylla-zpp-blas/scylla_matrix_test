@@ -108,7 +108,7 @@ The tests may fail due to a 'lack of permissions' or 'memory access violation er
 \pagebreak
 \section{Coordinate list}
 
-The coordinate list format assumes that the entire matrix is stored as a continuous, lexicographically sorted array of records of the type \code{(coord\_i, coord\_j, value)}. There are a few reasons as to why it was impossible to implement this approach in its purest form:
+The \textbf{coordinate list} format assumes that the entire matrix is stored as a continuous, lexicographically sorted array of records of the type \code{(coord\_i, coord\_j, value)}. There are a few reasons as to why it was impossible to implement this approach in its purest form:
 
 \begin{itemize}
 \item We want to cooperate with Scylla's clustering by splitting the matrix' data into smaller chunks, residing in different partitions of the database (so as to split it roughly evenly among all clusters).
@@ -128,9 +128,9 @@ CREATE TABLE zpp.coo_matrices (
 ) WITH CLUSTERING ORDER BY (matrix_id ASC);
 \end{lstlisting}
 
-(Please note that the current implementation of the coordinate-list-based multiplicator creates a new table in its constructor – this means that this kind of multiplicator must be a singleton at most, and that the creation of every multiplicator takes a good bit of time).
+(Please note that the current implementation of the \textbf{coordinate list}-based multiplicator creates a new table in its constructor -- this means that this kind of multiplicator must be a singleton at most, and that the creation of every multiplicator takes a good bit of time).
 
-The multiplication is done block-wise: for each result blocks, the blocks of multiplicated matrices are loaded blockwise and their results are added as the result is computed in the local memory. Then, the block is submitted to the database, and the next one is computed. This makes for an intuitive multiplication algorithm, albeit with some flaws – for instance, it is difficult to obtain a single call of the result quickly. 
+The multiplication is done block-wise: for each result blocks, the blocks of multiplicated matrices are loaded blockwise and their results are added as the result is computed in the local memory. Then, the block is submitted to the database, and the next one is computed. This makes for an intuitive multiplication algorithm, albeit with some flaws -- for instance, it is difficult to obtain a single call of the result quickly. 
 
 Note that:
 \begin{itemize}
@@ -143,12 +143,12 @@ For now, querying a result value loads the entire block that the value is locate
 Remarks: 
 \begin{itemize} 
 \item The representation is at least a bit uncomfortable for use.
-\item Most of the benefits of using blocks could be obtained with any other representation, although coordinate lists seem to be among the most natural tools for iteration over the values of a matrix. On the other hand, the block-based representation makes construction of the actual coordinate list of an entire matrix slightly more difficult than we would like it.
+\item Most of the benefits of using blocks could be obtained with any other representation, although \textbf{coordinate lists} seem to be among the most natural tools for iteration over the values of a matrix. On the other hand, the block-based representation makes construction of the actual coordinate list of an entire matrix slightly more difficult than we would like it.
 \item There could be better partitioning keys for blocks. Perhaps their diagonal, instead of serial, numbers?
-\item Scylla's native \code{set}s are said not to be the as efficient as we would like it. Perhaps we would be better off without them. That would probably bring us closer to the \textbf{Dictionary of keys} representation, though.
+\item Scylla's native \code{set}s are said not to be the as efficient as we would like it. Perhaps we would be better off without them. That would probably bring us closer to the \textbf{dictionary of keys} representation, though.
 \end{itemize}
 
-In summary, the \textbf{Coordinate list} representation seems to combine both advantages and weaknesses of other representations, and might not be the best candidate for our experiments with Scylla, given that there are likely better options, with more positives than negatives. 
+In summary, the \textbf{coordinate list} representation seems to combine both advantages and weaknesses of other representations, and might not be the best candidate for our experiments with Scylla, given that there are likely better options, with more positives than negatives. 
 
 It is, however, far from useless, as it looks like a fairly convenient way of data storage in the C++ context (the other being a set or a map, which, again, brings about the question of effectiveness that would have to be confirmed in tests). Quite possibly, we could combine its application in C++ with some other internal representation in Scylla to get the best of both worlds and to obtain optimal results. Still, I would not recommend it as first choice for our further work, and endorse it only if all other options prove to have numerous difficulties of their own.
 
@@ -156,7 +156,7 @@ It is, however, far from useless, as it looks like a fairly convenient way of da
 \section{Compressed sparse row}
 
 \pagebreak
-\section{Rubbish bin}
+\section*{Rubbish bin}
 
 \begin{lstlisting}[style=CStyle]
 #include <stdio.h>
