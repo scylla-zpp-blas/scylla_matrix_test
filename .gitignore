@@ -2,3 +2,4 @@
 workspace.xml
 tasks.xml
 cmake-build-debug/*
+scylla_data/

@@ -3,6 +3,8 @@ project(scylla_matrix_test)
 
 set(CMAKE_CXX_STANDARD 17)
 
+add_subdirectory(lib/fmt EXCLUDE_FROM_ALL)
+
 include_directories(${CMAKE_SOURCE_DIR}/include)
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
@@ -36,4 +38,25 @@ target_link_libraries(simple_test cassandra)
 
 add_executable(dok_test dictionary_of_keys/dictionary_of_keys.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
 target_link_libraries(dok_test cassandra)
+
+
+set(SCYLLA_DRIVER
+        list_of_lists/scylla_driver/scd_exceptions.hh
+        list_of_lists/scylla_driver/scd_exceptions.cc
+        list_of_lists/scylla_driver/scd_prepared_query.hh
+        list_of_lists/scylla_driver/scd_prepared_query.cc
+        list_of_lists/scylla_driver/scd_query_result.hh
+        list_of_lists/scylla_driver/scd_query_result.cc
+        list_of_lists/scylla_driver/scd_session.hh
+        list_of_lists/scylla_driver/scd_session.cc
+        list_of_lists/scylla_driver/scd_statement.hh
+        list_of_lists/scylla_driver/scd_statement.cc
+        list_of_lists/scylla_driver/value_converters/collection_appender.hh
+        list_of_lists/scylla_driver/value_converters/statement_binder.hh
+        list_of_lists/scylla_driver/value_converters/tuple_binder.hh
+        list_of_lists/scylla_driver/value_converters/value_retriever.hh
+        )
+
+add_executable(lil_test list_of_lists/list_of_lists.cc "${SCYLLA_DRIVER}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
+target_link_libraries(lil_test PUBLIC cassandra fmt::fmt)
 

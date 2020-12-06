@@ -2,9 +2,10 @@
 // Created by hayven on 21.11.2020.
 //
 
-#include "connector.hh"
 #include <stdexcept>
 #include <string>
+
+#include "connector.hh"
 
 connector::connector(const char* address, const char* port) {
     _cluster = cass_cluster_new();
