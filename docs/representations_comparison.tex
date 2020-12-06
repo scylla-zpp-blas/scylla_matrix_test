@@ -45,7 +45,31 @@ Among the most popular representations of sparse matrices used in numeric calcul
 \item coordinate list (\textbf{COO})
 \item compressed sparse row (\textbf{CSR})
 \end{itemize}
-Each of the representations has its own advantages and disadvantages. Scylla, as a data storage system, has its limitations – we expect overhead caused by collection of data through queries instead of direct access, and need to accomodate for the peculiar partitioning feature (which, to some degree, can also be taken advantage of). This is why we had to treat the aforementioned formats as an inspiration rather than direct specification. This document aims to summarize our representations based on each of the models listed above, describing all their advantages and disadvantages found to-date. The summary will serve as a basis on which the most suitable representation will be picked for future experiments.
+Each of the representations has its own advantages and disadvantages. Scylla, as a data storage system, has its limitations -- we expect overhead caused by collection of data through queries instead of direct access, and need to accomodate for the peculiar partitioning feature (which, to some degree, can also be taken advantage of). This is why we had to treat the aforementioned formats as an inspiration rather than direct specification. This document aims to summarise our representations based on each of the models listed above, describing all their advantages and disadvantages found to-date. The summary will serve as a basis on which the most suitable representation will be picked for future experiments.
+
+\pagebreak
+\section*{Overview}
+
+The representations were implemented in the C++ programming language and used by subclasses of an abstract \textbf{multiplicator} class (\texttt{multiplicator.hh}). The intended application for each of the specialisations was thus:
+
+\begin{itemize}
+\item the method \texttt{load\_matrix()} would be called twice, each time with a matrix generator object as an argument, so that each implementation of the multiplicator would read and save two (possibly different) matrices and store it using its respective representation;
+\item the method \texttt{multiply()} would then be called, and the two matrices loaded earlier (the first we will call $A$, the latter we will call $B$) would be multiplied in order to obtain a matrix $C$ as a result (satisfying $C = AB$), that would be stored in the database in the format used by the multiplier
+\item the values of the result matrix could be obtained upon the completion of the \texttt{multiply()} function by calls to \texttt{get\_result()}, which takes the pair of coordinates $(i, j)$ of the requested cell as arguments.
+\end{itemize}
+
+The signatures are as follows:
+
+\begin{lstlisting}[style=CStyle]
+    virtual void load_matrix(matrix_value_generator<T>&& gen) = 0;
+    virtual void multiply() = 0;
+    virtual T get_result(std::pair<size_t, size_t> pos) = 0;
+\end{lstlisting}
+
+The implementations were cross-tested with an aid of Boost Unit Test framework. The tests were implemented in the \texttt{simple\_test.cc} file and can be executed by running the \texttt{simple\_test} program. As of now, the tests are slow due to the inherent slowness of our implementations, which have been designed as a proof-of-concept rather than ready-to-use, and lack the necessary optimizations of table creation, value retrieval, and even the multiplication itself.
+
+\subsection*{WARNING}
+The tests may fail due to a 'lack of permissions' or 'memory access violation error', both of unknown origin. This may be an issue either of the testing mechanism or of our implementations. In case it is the latter, further investigation is needed.
 
 \pagebreak
 \section{Dictionary of keys}
