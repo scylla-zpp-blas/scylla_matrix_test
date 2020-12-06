@@ -142,7 +142,7 @@ For now, querying a result value loads the entire block that the value is locate
 
 Remarks: 
 \begin{itemize} 
-\item The representation is at least a bit uncomfortable for use.
+\item The representation is a bit awkward and uncomfortable to use. (It's entirely possible, though, that it is the case with all our implementations).
 \item Most of the benefits of using blocks could be obtained with any other representation, although \textbf{coordinate lists} seem to be among the most natural tools for iteration over the values of a matrix. On the other hand, the block-based representation makes construction of the actual coordinate list of an entire matrix slightly more difficult than we would like it.
 \item There could be better partitioning keys for blocks. Perhaps their diagonal, instead of serial, numbers?
 \item Scylla's native \code{set}s are said not to be the as efficient as we would like it. Perhaps we would be better off without them. That would probably bring us closer to the \textbf{dictionary of keys} representation, though.
