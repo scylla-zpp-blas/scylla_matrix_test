@@ -5,6 +5,7 @@
 #include "coordinate_list/coordinate_list.hh"
 #include "dictionary_of_keys/dictionary_of_keys.hh"
 #include <list>
+#include "fmt/format.h"
 
 #define BOOST_TEST_MAIN
 #define BOOST_TEST_MODULE simple_test
@@ -66,6 +67,16 @@ BOOST_AUTO_TEST_SUITE(simple_cross_antitest)
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(simple_cross_test)
+    BOOST_AUTO_TEST_CASE(test_all_implementations0) {
+        std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
+        auto _coo = get_result(COORDINATE_LIST, 3, 3, conn, 2);
+        auto _csr = get_result(COMPRESSED_SPARSE_ROW, 3, 3, conn, 2);
+        auto _dok = get_result(DICTIONARY_OF_KEYS, 3, 3, conn, 2);
+
+        BOOST_TEST(_coo == _csr);;
+        BOOST_TEST(_coo == _dok);
+    }
+
     BOOST_AUTO_TEST_CASE(test_all_implementations1) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
         auto _coo = get_result(COORDINATE_LIST, 10, 10, conn, 1);

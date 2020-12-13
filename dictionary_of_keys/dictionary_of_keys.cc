@@ -5,7 +5,7 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<connector> conn;
 
     try {
-        conn = std::make_shared<connector>("172.17.0.2");
+        conn = std::make_shared<connector>("172.19.0.2");
         std::cout << "Connected" << std::endl;
     } catch (...) {
         std::cout << "Connection error" << std::endl;
