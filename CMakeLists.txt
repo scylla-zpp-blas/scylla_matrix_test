@@ -66,7 +66,7 @@ set(SCYLLA_DRIVER
         list_of_lists/scylla_driver/value_converters/value_retriever.hh
         )
 
-add_executable(lil_test list_of_lists/list_of_lists.cc "${SCYLLA_DRIVER}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
+add_executable(lil_test list_of_lists/list_of_lists_cli.cc "${SCYLLA_DRIVER}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}" list_of_lists/list_of_lists.hh list_of_lists/list_of_lists_wrapper.hh)
 target_link_libraries(lil_test PUBLIC cassandra fmt::fmt)
 
 add_test(NAME test1 COMMAND simple_test)
