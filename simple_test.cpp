@@ -13,9 +13,9 @@
 const char *IP_ADDRESS = "172.19.0.2";
 
 enum implementation {
-    COO,
-    CSR,
-    DOK
+    COORDINATE_LIST,
+    COMPRESSED_SPARSE_ROW,
+    DICTIONARY_OF_KEYS
 };
 
 std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals,
@@ -68,9 +68,9 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(simple_cross_test)
     BOOST_AUTO_TEST_CASE(test_all_implementations1) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        auto _coo = get_result(COO, 10, 10, conn, 1);
-        auto _csr = get_result(CSR, 10, 10, conn, 1);
-        auto _dok = get_result(DOK, 10, 10, conn, 1);
+        auto _coo = get_result(COORDINATE_LIST, 10, 10, conn, 1);
+        auto _csr = get_result(COMPRESSED_SPARSE_ROW, 10, 10, conn, 1);
+        auto _dok = get_result(DICTIONARY_OF_KEYS, 10, 10, conn, 1);
 
         BOOST_TEST(_coo == _csr);
         BOOST_TEST(_coo == _dok);
@@ -78,9 +78,9 @@ BOOST_AUTO_TEST_SUITE(simple_cross_test)
 
     BOOST_AUTO_TEST_CASE(test_all_implementations2) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        auto _coo = get_result(COO, 20, 20, conn, 3);
-        auto _csr = get_result(CSR, 20, 20, conn, 3);
-        auto _dok = get_result(DOK, 20, 20, conn, 3);
+        auto _coo = get_result(COORDINATE_LIST, 20, 20, conn, 3);
+        auto _csr = get_result(COMPRESSED_SPARSE_ROW, 20, 20, conn, 3);
+        auto _dok = get_result(DICTIONARY_OF_KEYS, 20, 20, conn, 3);
 
         BOOST_TEST(_coo == _csr);
         BOOST_TEST(_coo == _dok);
@@ -88,9 +88,9 @@ BOOST_AUTO_TEST_SUITE(simple_cross_test)
 
     BOOST_AUTO_TEST_CASE(test_all_implementations3) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        auto _coo = get_result(COO, 6, 30, conn, 42);
-        auto _csr = get_result(CSR, 6, 30, conn, 42);
-        auto _dok = get_result(DOK, 6, 30, conn, 42);
+        auto _coo = get_result(COORDINATE_LIST, 6, 30, conn, 42);
+        auto _csr = get_result(COMPRESSED_SPARSE_ROW, 6, 30, conn, 42);
+        auto _dok = get_result(DICTIONARY_OF_KEYS, 6, 30, conn, 42);
 
         BOOST_TEST(_coo == _csr);
         BOOST_TEST(_coo == _dok);
