@@ -12,6 +12,12 @@
 
 const char *IP_ADDRESS = "172.19.0.2";
 
+enum implementation {
+    COO,
+    CSR,
+    DOK
+};
+
 std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals,
                                                    std::unique_ptr<multiplicator<float>> multiplicator, int seed) {
     std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 0);
@@ -35,7 +41,7 @@ std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals
     return ret;
 }
 
-std::list<std::list<matrix_value<float>>> get_all_results(size_t dimension, size_t vals,
+std::list<matrix_value<float>> get_result(implementation from, size_t dimension, size_t vals,
                                                           std::shared_ptr<connector> conn, int seed) {
 
     std::vector<std::unique_ptr<multiplicator<float>>> multiplicators;
@@ -43,17 +49,14 @@ std::list<std::list<matrix_value<float>>> get_all_results(size_t dimension, size
     multiplicators.emplace_back(std::make_unique<CSR<float>>(conn));
     multiplicators.emplace_back(std::make_unique<DOK<float>>(conn));
 
-    std::list<std::list<matrix_value<float>>> results;
-    for (auto &m : multiplicators) {
-        results.push_back(get_multiplied_vals(dimension, vals, std::move(m), seed));
-    }
+    auto &m = multiplicators[from];
 
-    return results;
+    return get_multiplied_vals(dimension, vals, std::move(m), seed);
 }
 BOOST_TEST_SPECIALIZED_COLLECTION_COMPARE(std::list<matrix_value<float>>)
 
 BOOST_AUTO_TEST_SUITE(simple_cross_antitest)
-    BOOST_AUTO_TEST_CASE(coo_vs_csr_fail) {
+    BOOST_AUTO_TEST_CASE(test_fail) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
         auto vals_1 = get_multiplied_vals(10, 10, std::make_unique<COO<float>>(conn), 1);
         auto vals_2 = get_multiplied_vals(10, 10, std::make_unique<CSR<float>>(conn), 111);
@@ -63,45 +66,33 @@ BOOST_AUTO_TEST_SUITE(simple_cross_antitest)
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(simple_cross_test)
-    BOOST_AUTO_TEST_CASE(coo_vs_csr1) {
+    BOOST_AUTO_TEST_CASE(test_all_implementations1) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        auto results = get_all_results(10, 10, conn, 1);
+        auto _coo = get_result(COO, 10, 10, conn, 1);
+        auto _csr = get_result(CSR, 10, 10, conn, 1);
+        auto _dok = get_result(DOK, 10, 10, conn, 1);
 
-        auto it_1 = results.begin();
-        auto it_2 = ++results.begin();
-
-        while (it_2 != results.end()) {
-            BOOST_TEST(*it_1 == *it_2);
-            it_1++;
-            it_2++;
-        }
+        BOOST_TEST(_coo == _csr);
+        BOOST_TEST(_coo == _dok);
     }
 
-    BOOST_AUTO_TEST_CASE(coo_vs_csr2) {
+    BOOST_AUTO_TEST_CASE(test_all_implementations2) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        auto results = get_all_results(20, 20, conn, 3);
+        auto _coo = get_result(COO, 20, 20, conn, 3);
+        auto _csr = get_result(CSR, 20, 20, conn, 3);
+        auto _dok = get_result(DOK, 20, 20, conn, 3);
 
-        auto it_1 = results.begin();
-        auto it_2 = ++results.begin();
-
-        while (it_2 != results.end()) {
-            BOOST_TEST(*it_1 == *it_2);
-            it_1++;
-            it_2++;
-        }
+        BOOST_TEST(_coo == _csr);
+        BOOST_TEST(_coo == _dok);
     }
 
-    BOOST_AUTO_TEST_CASE(coo_vs_csr3) {
+    BOOST_AUTO_TEST_CASE(test_all_implementations3) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        auto results = get_all_results(6, 30, conn, 42);
+        auto _coo = get_result(COO, 6, 30, conn, 42);
+        auto _csr = get_result(CSR, 6, 30, conn, 42);
+        auto _dok = get_result(DOK, 6, 30, conn, 42);
 
-        auto it_1 = results.begin();
-        auto it_2 = ++results.begin();
-
-        while (it_2 != results.end()) {
-            BOOST_TEST(*it_1 == *it_2);
-            it_1++;
-            it_2++;
-        }
+        BOOST_TEST(_coo == _csr);
+        BOOST_TEST(_coo == _dok);
     }
 BOOST_AUTO_TEST_SUITE_END()
