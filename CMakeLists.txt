@@ -43,7 +43,7 @@ target_link_libraries(simple_test cassandra
         ${Boost_FILESYSTEM_LIBRARY}
         ${Boost_SYSTEM_LIBRARY}
         ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
-        gmock_main pthread
+        pthread
         )
 
 add_executable(dok_test dictionary_of_keys/dictionary_of_keys.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}" dictionary_of_keys/dictionary_of_keys.cc)
