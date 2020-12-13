@@ -201,6 +201,12 @@ public:
                 size_t i = 0, j = 0;
 
                 while (!(_f_block.empty() or _s_block.empty())) {
+                    for (auto &elem: _f_block) {
+                        std::cerr << elem.i << "i " << elem.j << "j = " << elem.val << "\n";
+                    }
+                    for (auto &elem: _s_block) {
+                        std::cerr << elem.i << "i " << elem.j << "j = " << elem.val << "\n";
+                    }
                     while (i < _f_block.size() && _f_block[i].j <= _s_block[j].j) {
                         if (_f_block[i].j == _s_block[i].j) {
                             _sum += _f_block[i].val * _s_block[i].val;
