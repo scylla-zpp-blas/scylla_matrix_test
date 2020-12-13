@@ -10,7 +10,7 @@
 #define BOOST_TEST_MODULE simple_test
 #include <boost/test/unit_test.hpp>
 
-const char const *IP_ADDRESS = "172.19.0.2";
+const char *IP_ADDRESS = "172.19.0.2";
 
 std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals,
                                                    std::unique_ptr<multiplicator<float>> multiplicator, int seed) {
