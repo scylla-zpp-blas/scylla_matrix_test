@@ -10,6 +10,8 @@
 #define BOOST_TEST_MODULE simple_test
 #include <boost/test/unit_test.hpp>
 
+const char const *IP_ADDRESS = "172.19.0.2";
+
 std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals,
                                                    std::unique_ptr<multiplicator<float>> multiplicator, int seed) {
     std::shared_ptr factory = std::make_shared<float_value_factory>(0.0, 100.0, 0);
@@ -52,7 +54,7 @@ BOOST_TEST_SPECIALIZED_COLLECTION_COMPARE(std::list<matrix_value<float>>)
 
 BOOST_AUTO_TEST_SUITE(simple_cross_antitest)
     BOOST_AUTO_TEST_CASE(coo_vs_csr_fail) {
-        std::shared_ptr<connector> conn = std::make_shared<connector>("172.17.0.2");
+        std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
         auto vals_1 = get_multiplied_vals(10, 10, std::make_unique<COO<float>>(conn), 1);
         auto vals_2 = get_multiplied_vals(10, 10, std::make_unique<CSR<float>>(conn), 111);
 
@@ -62,7 +64,7 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(simple_cross_test)
     BOOST_AUTO_TEST_CASE(coo_vs_csr1) {
-        std::shared_ptr<connector> conn = std::make_shared<connector>("172.17.0.2");
+        std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
         auto results = get_all_results(10, 10, conn, 1);
 
         auto it_1 = results.begin();
@@ -76,7 +78,7 @@ BOOST_AUTO_TEST_SUITE(simple_cross_test)
     }
 
     BOOST_AUTO_TEST_CASE(coo_vs_csr2) {
-        std::shared_ptr<connector> conn = std::make_shared<connector>("172.17.0.2");
+        std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
         auto results = get_all_results(20, 20, conn, 3);
 
         auto it_1 = results.begin();
@@ -90,7 +92,7 @@ BOOST_AUTO_TEST_SUITE(simple_cross_test)
     }
 
     BOOST_AUTO_TEST_CASE(coo_vs_csr3) {
-        std::shared_ptr<connector> conn = std::make_shared<connector>("172.17.0.2");
+        std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
         auto results = get_all_results(6, 30, conn, 42);
 
         auto it_1 = results.begin();
