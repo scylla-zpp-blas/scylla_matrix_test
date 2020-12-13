@@ -209,7 +209,7 @@ public:
         const auto& [a_height, a_width] = get_dimensions(a);
         const auto& [b_height, b_width] = get_dimensions(b);
         if(a_width != b_height) {
-            throw std::runtime_error("Invalid matrix dimensions, cant multiply");
+            throw std::runtime_error(fmt::format("Invalid matrix dimensions, cant multiply ({} x {}), ({}, {})", a_height, a_width, b_height, b_width));
         }
 
         scd_prepared_query insert_row_prepared = get_row_inserter();

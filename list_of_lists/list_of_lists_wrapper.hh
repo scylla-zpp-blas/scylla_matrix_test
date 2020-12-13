@@ -4,33 +4,31 @@ template<typename T>
 class LIL_wrapper : public multiplicator<T> {
 private:
     LIL<T> repr;
-    size_t a, b, c;
+    size_t a = 0, b = 0, c = 0;
     std::vector<std::vector<T>> result;
+    bool first_call = true;
 public:
 
     explicit LIL_wrapper(const std::shared_ptr<scd_session>& connection) : repr(connection) {};
 
     void load_matrix(matrix_value_generator<T>&& gen) override {
-        static bool first_call = true;
         if(first_call) {
-            this.a = repr.load_matrix(gen);
+            repr.create_tables();
+            this->a = repr.load_matrix(std::move(gen));
             first_call = false;
         } else {
-            this.b = repr.load_matrix(gen);
+            this->b = repr.load_matrix(std::move(gen));
         }
     };
 
     void multiply() override {
-        this.c = repr.multiply(this.a, this.b);
-        this-result = repr.get_matrix_as_dense(this.c);
+        this->c = repr.multiply(this->a, this->b);
+        this->result = repr.get_matrix_as_dense(this->c);
     };
 
     T get_result(std::pair<size_t, size_t> pos) override {
-        return result[pos.first][pos.second];
+        return result[pos.first - 1][pos.second - 1];
     };
 
-    ~multiplicator() {};
+    ~LIL_wrapper() = default;
 };
-
-
-template LIL_wrapper<float>;

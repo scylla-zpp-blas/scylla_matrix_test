@@ -35,21 +35,6 @@ set(UTILS_SRC
         utils/requestor.cc
         )
 
-add_executable(scylla_matrix_test main.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
-target_link_libraries(scylla_matrix_test cassandra)
-
-add_executable(simple_test simple_test.cpp coordinate_list/coordinate_list.hh "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
-target_link_libraries(simple_test cassandra
-        ${Boost_FILESYSTEM_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
-        ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
-        pthread
-        fmt::fmt
-        )
-
-add_executable(dok_test dictionary_of_keys/dictionary_of_keys.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}" dictionary_of_keys/dictionary_of_keys.cc)
-target_link_libraries(dok_test cassandra)
-
 set(SCYLLA_DRIVER
         list_of_lists/scylla_driver/scd_exceptions.hh
         list_of_lists/scylla_driver/scd_exceptions.cc
@@ -66,6 +51,23 @@ set(SCYLLA_DRIVER
         list_of_lists/scylla_driver/value_converters/tuple_binder.hh
         list_of_lists/scylla_driver/value_converters/value_retriever.hh
         )
+
+add_executable(scylla_matrix_test main.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
+target_link_libraries(scylla_matrix_test cassandra)
+
+add_executable(simple_test simple_test.cpp coordinate_list/coordinate_list.hh "${SCYLLA_DRIVER}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
+target_link_libraries(simple_test cassandra
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+        pthread
+        fmt::fmt
+        )
+
+add_executable(dok_test dictionary_of_keys/dictionary_of_keys.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}" dictionary_of_keys/dictionary_of_keys.cc)
+target_link_libraries(dok_test cassandra)
+
+
 
 add_executable(lil_test list_of_lists/list_of_lists_cli.cc "${SCYLLA_DRIVER}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}" list_of_lists/list_of_lists.hh list_of_lists/list_of_lists_wrapper.hh)
 target_link_libraries(lil_test PUBLIC cassandra fmt::fmt)
