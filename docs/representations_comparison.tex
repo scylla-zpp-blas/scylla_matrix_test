@@ -197,6 +197,32 @@ As already mentioned the main feature of CSR representation is the ability of ea
 
 
 \pagebreak
+\section{Dictionary of Keys}
+
+The \textbf{dictionary of keys} format benefits from database's data indexing, making both random access via key, and sorted access to row possible. Below is the table used for this representation:
+
+\begin{lstlisting}[style=SQLStyle]
+    CREATE TABLE zpp.dok_matrix (
+    matrix_id int,
+    pos_y     bigint,
+    pos_y     bigint,
+    val       double,
+    PRIMARY KEY (matrix_id, pos_y, pos_x)
+    );
+\end{lstlisting}
+
+Like in other representations we need to have another table if we want to store matrix's dimensions as zeroes are not stored in this representation.
+
+Matrix's values are sorted and thus returned first by row number and then by column number. This allows us to easily implement matrix multiplication row by row of $A \cdot B$ given we store $A$ and $B^T$ in the tables.
+
+As of now, main issues of this representation are:
+\begin{itemize}
+    \item With this representation, iterating rows is quick and it is possible to retrieve a whole row with a single query, but iterating columns is slow because a new query has to be made for every element of a column.
+    If there is only need to iterate column by column, the matrix can be transposed or transferred to a different table, sorted first by column number, then row number.
+    \item Matrix multiplication with this representation may require $O(n^2)$ queries, where $n$ is matrix's dimension, which provides a major overhead when every row contains only one value.
+\end{itemize}
+
+\pagebreak
 \section*{Rubbish bin}
 
 \begin{lstlisting}[style=CStyle]
