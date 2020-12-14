@@ -199,7 +199,7 @@ As already mentioned the main feature of CSR representation is the ability of ea
 \pagebreak
 \section{Dictionary of Keys}
 
-The \textbf{dictionary of keys} format benefits from database's data indexing, making both random access via key, and sorted access to row possible. Below is the table used for this representation:
+The \textbf{dictionary of keys} format benefits from database's data indexing, making both random access via key, and access to sorted rows possible. Below is the table used for this representation:
 
 \begin{lstlisting}[style=SQLStyle]
     CREATE TABLE zpp.dok_matrix (
@@ -211,16 +211,14 @@ The \textbf{dictionary of keys} format benefits from database's data indexing, m
     );
 \end{lstlisting}
 
-Like in other representations we need to have another table if we want to store matrix's dimensions as zeroes are not stored in this representation.
+Like in other representations, another table is necessary if user wants to store matrix's dimensions as zeroes are not stored in this representation.
 
-Matrix's values are sorted and thus returned first by row number and then by column number. This allows us to easily implement matrix multiplication row by row of $A \cdot B$ given we store $A$ and $B^T$ in the tables.
+Matrix's values are sorted and thus returned first by row number and then by column number. This allows easy matrix multiplication row by row of $A \cdot B$, given that $A$ and $B^T$ is stored in the table.
 
-As of now, main issues of this representation are:
-\begin{itemize}
-    \item With this representation, iterating rows is quick and it is possible to retrieve a whole row with a single query, but iterating columns is slow because a new query has to be made for every element of a column.
-    If there is only need to iterate column by column, the matrix can be transposed or transferred to a different table, sorted first by column number, then row number.
-    \item Matrix multiplication with this representation may require $O(n^2)$ queries, where $n$ is matrix's dimension, which provides a major overhead when every row contains only one value.
-\end{itemize}
+With this representation, querying subsequent rows is quick. It is possible to chunk the queries into both big parts containing multiple rows and small parts containing only parts of a row. On the other hand, querying subsequent columns is usually slow as iterating through a single column may mean making multiple database queries.
+
+However, it is possible to bypass this problem easily, if, for a given matrix, only one way of iterating is needed -- we can transpose the matrix or upload it to a different table that is sorted column number first, row number second and iterate.
+
 
 \pagebreak
 \section*{Rubbish bin}
