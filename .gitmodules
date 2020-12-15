@@ -1,3 +1,6 @@
 [submodule "lib/fmt"]
 	path = lib/fmt
 	url = git@github.com:fmtlib/fmt.git
+[submodule "lib/scylla_driver"]
+	path = lib/scylla_driver
+	url = git@github.com:scylla-zpp-blas/scylla_modern_cpp_driver.git
