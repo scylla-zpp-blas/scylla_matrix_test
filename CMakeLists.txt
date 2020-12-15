@@ -69,7 +69,7 @@ target_link_libraries(dok_test cassandra)
 
 
 
-add_executable(lil_test list_of_lists/list_of_lists_cli.cc "${SCYLLA_DRIVER}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}" list_of_lists/list_of_lists.hh list_of_lists/list_of_lists_wrapper.hh)
-target_link_libraries(lil_test PUBLIC cassandra fmt::fmt)
+add_executable(lil_cli list_of_lists/list_of_lists_cli.cc "${SCYLLA_DRIVER}" "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}" list_of_lists/list_of_lists.hh list_of_lists/list_of_lists_wrapper.hh)
+target_link_libraries(lil_cli PUBLIC cassandra fmt::fmt)
 
 add_test(NAME test1 COMMAND simple_test)

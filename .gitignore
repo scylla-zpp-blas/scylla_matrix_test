@@ -4,3 +4,6 @@ tasks.xml
 cmake-build-debug/*
 scylla_data/
 build/
+*.aux
+*.log
+*.synctex.gz

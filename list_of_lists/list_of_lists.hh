@@ -40,7 +40,7 @@ CREATE TABLE {0}.{1} (
     filled int,
     {{}},
     PRIMARY KEY (matrix_id, row, part)
-) WITH CLUSTERING ORDER BY (row ASC);
+) WITH CLUSTERING ORDER BY (row ASC, part ASC);
 )", namespace_name, table_name_rows);
 
     const std::string create_columns_table_query = fmt::format(R"(
@@ -51,7 +51,7 @@ CREATE TABLE {0}.{1} (
     filled int,
     {{}},
     PRIMARY KEY (matrix_id, column, part)
-) WITH CLUSTERING ORDER BY (column ASC);
+) WITH CLUSTERING ORDER BY (column ASC, part ASC);
 )", namespace_name, table_name_columns);
 
     const std::string create_meta_table_query = fmt::format(R"(

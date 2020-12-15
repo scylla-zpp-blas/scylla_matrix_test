@@ -102,9 +102,68 @@ The tests may fail due to a 'lack of permissions' or 'memory access violation er
 \pagebreak
 \section{Dictionary of keys}
 
+The \textbf{dictionary of keys} format benefits from database's data indexing, making both random access via key, and access to sorted rows possible. Below is the table used for this representation:
+
+\begin{lstlisting}[style=SQLStyle]
+    CREATE TABLE zpp.dok_matrix (
+    matrix_id int,
+    pos_y     bigint,
+    pos_x     bigint,
+    val       double,
+    PRIMARY KEY (matrix_id, pos_y, pos_x)
+    );
+\end{lstlisting}
+
+Like in other representations, another table is necessary if user wants to store matrix's dimensions as zeroes are not stored in this representation.
+
+Matrix's values are sorted and thus returned first by row number and then by column number. This allows easy matrix multiplication row by row of $A \cdot B$, given that $A$ and $B^T$ is stored in the table.
+
+With this representation, querying subsequent rows is quick. It is possible to chunk the queries into both big parts containing multiple rows and small parts containing only parts of a row. On the other hand, querying subsequent columns is usually slow as iterating through a single column may mean making multiple database queries.
+
+However, it is possible to bypass this problem easily, if, for a given matrix, only one way of iterating is needed -- we can transpose the matrix or upload it to a different table that is sorted column number first, row number second and iterate.
+
 \pagebreak
 \section{List of lists}
 
+This representation uses quite different approach than others. Each matrix is stored in 2 copies - once as rows list of lists, once as columns list of lists. Both tables work the same way, so let's just talk about one storing rows.
+
+\begin{lstlisting}[style=SQLStyle]
+ CREATE TABLE zpp.lil_rows (
+    matrix_id int,
+    row bigint,
+    part bigint,
+    filled int,
+    i_0 bigint,
+    v_0 double,
+    i_1 bigint,
+    v_1 double,
+    <more columns following same pattern>,
+    PRIMARY KEY (matrix_id, row, part)
+) WITH CLUSTERING ORDER BY (row ASC, part ASC);
+\end{lstlisting}
+Partitioning key definitely should be different (maybe (matrix\_id, row)?), but it doesn't really matter now.
+
+To avoid using built-in sets or lists, we treat each database row as constant-size array of pairs (i\_x - column index, v\_x - value in this column). Each such row in database represents part of matrix row. Column ``filled'' tells us what part of this database row is used. 
+
+Second table works exactly the same way, but stores columns, not rows - it is used to perform multiplication more effectively. Now that I think of it - I'm not sure if it is really required, it may be possible to multiply with decent performance using only rows representation. But, even if it is true, is it also the case for other algorithms we may need to implement?
+
+Advantages:
+\begin{itemize}
+ \item Low overhead of fetching row / part of row. Small amount of database rows need to be retrieved (because many values can be stored per row), also, much bigger \% of fetched data is actual data, not matrix\_id / row\_id etc, compared to DOK and CSR.
+ \item Potentially very fast multiplication and other algorithms (I'm not sure it that's true with just 1 table).
+ \item Not lists or sets, so no performance problems related to them (using them might be a problem with COO).
+ \item Doesn't need the O(n) space for string row index array, which is the case with CSR - so it can easily store matrices with really big dimensions.
+ \item Creating matrix in rows table is fast and easy - we can create whole part of row locally, and insert with one prepared query, which isn't the case with other DOK/CSR.
+\end{itemize}
+
+Disadvantages:
+\begin{itemize}
+ \item Fetching single cell at given coordinates is not straightforward. We need to locate right part of the row, fetch the whole part, and find right column. Logarithmic complexity, but with very small constant. COO/CSR have similiar problems, DOK seems best in that regard.
+ \item Not possible to iterate trough column, or even knowing that column has any nonzero values without using column list of lists table. I don't think any other representation really solves this problem.
+ \item Creating columnar representation is slow - we need a query for each value in matrix, and using preapred queries is problematic (we would need to prepare a lot of them). It may be non-issue, if having columnar representation turns out to be unnecessary. Otherwise, I don't have any idea how to speed up this process. However, DOK and CSR both need inserting one value per query when creating matrix, so this issue may not be disqualifying.
+\end{itemize}
+
+Overall, I think it may be pretty decent representation and I'd consider using it in further work.
 \pagebreak
 \section{Coordinate list}
 
@@ -194,30 +253,6 @@ Here are some of the possible issues with CSR representation:
 \end{itemize}
 
 As already mentioned the main feature of CSR representation is the ability of easily retriving a single row. For this reason the representation is mostly useful in algorithms and applications that naturally use such queries (one possible example could be representing large, immutable sparse graphs as matrices - a single row corresponds to the neighbours of a given vertex). It might be worth comparing this representation with the \textbf{list of lists} representation in such uses.
-
-
-\pagebreak
-\section{Dictionary of Keys}
-
-The \textbf{dictionary of keys} format benefits from database's data indexing, making both random access via key, and access to sorted rows possible. Below is the table used for this representation:
-
-\begin{lstlisting}[style=SQLStyle]
-    CREATE TABLE zpp.dok_matrix (
-    matrix_id int,
-    pos_y     bigint,
-    pos_y     bigint,
-    val       double,
-    PRIMARY KEY (matrix_id, pos_y, pos_x)
-    );
-\end{lstlisting}
-
-Like in other representations, another table is necessary if user wants to store matrix's dimensions as zeroes are not stored in this representation.
-
-Matrix's values are sorted and thus returned first by row number and then by column number. This allows easy matrix multiplication row by row of $A \cdot B$, given that $A$ and $B^T$ is stored in the table.
-
-With this representation, querying subsequent rows is quick. It is possible to chunk the queries into both big parts containing multiple rows and small parts containing only parts of a row. On the other hand, querying subsequent columns is usually slow as iterating through a single column may mean making multiple database queries.
-
-However, it is possible to bypass this problem easily, if, for a given matrix, only one way of iterating is needed -- we can transpose the matrix or upload it to a different table that is sorted column number first, row number second and iterate.
 
 
 \pagebreak
