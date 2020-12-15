@@ -4,3 +4,4 @@
 [submodule "lib/scylla_driver"]
 	path = lib/scylla_driver
 	url = git@github.com:scylla-zpp-blas/scylla_modern_cpp_driver.git
+	branch = initial
