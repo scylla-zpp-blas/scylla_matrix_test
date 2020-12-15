@@ -6,7 +6,7 @@
 #include "compressed_sparse_row/compressed_sparse_row.hh"
 #include "coordinate_list/coordinate_list.hh"
 #include "dictionary_of_keys/dictionary_of_keys.hh"
-#include "list_of_lists/scylla_driver/scd_session.hh"
+#include "list_of_lists/scylla_driver/session.hh"
 #include "list_of_lists/list_of_lists_wrapper.hh"
 
 #define BOOST_TEST_MAIN
@@ -46,7 +46,7 @@ std::list<matrix_value<float>> get_multiplied_vals(size_t dimension, size_t vals
 }
 
 std::list<matrix_value<float>> get_result(implementation from, size_t dimension, size_t vals,
-                                                          std::shared_ptr<connector> conn, std::shared_ptr<scd_session> conn2, int seed) {
+                                          std::shared_ptr<connector> conn, std::shared_ptr<scmd_session> conn2, int seed) {
 
     std::unique_ptr<multiplicator<float>> multiplicator;
     switch(from) {
@@ -72,7 +72,7 @@ BOOST_TEST_SPECIALIZED_COLLECTION_COMPARE(std::list<matrix_value<float>>)
 BOOST_AUTO_TEST_SUITE(simple_cross_antitest)
     BOOST_AUTO_TEST_CASE(test_fail) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        std::shared_ptr<scd_session> conn2 = std::make_shared<scd_session>(IP_ADDRESS);
+        std::shared_ptr<scmd_session> conn2 = std::make_shared<scmd_session>(IP_ADDRESS);
         auto _coo = get_result(implementation::COORDINATE_LIST, 10, 10, conn, conn2, 1);
         auto _csr = get_result(implementation::COMPRESSED_SPARSE_ROW, 10, 10, conn, conn2, 111);
 
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(simple_cross_test)
     BOOST_AUTO_TEST_CASE(test_all_implementations0) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        std::shared_ptr<scd_session> conn2 = std::make_shared<scd_session>(IP_ADDRESS);
+        std::shared_ptr<scmd_session> conn2 = std::make_shared<scmd_session>(IP_ADDRESS);
         auto _coo = get_result(implementation::COORDINATE_LIST, 3, 3, conn, conn2, 2);
         auto _csr = get_result(implementation::COMPRESSED_SPARSE_ROW, 3, 3, conn, conn2, 2);
         auto _dok = get_result(implementation::DICTIONARY_OF_KEYS, 3, 3, conn, conn2, 2);
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_SUITE(simple_cross_test)
 
     BOOST_AUTO_TEST_CASE(test_all_implementations1) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        std::shared_ptr<scd_session> conn2 = std::make_shared<scd_session>(IP_ADDRESS);
+        std::shared_ptr<scmd_session> conn2 = std::make_shared<scmd_session>(IP_ADDRESS);
         auto _coo = get_result(implementation::COORDINATE_LIST, 10, 10, conn, conn2, 1);
         auto _csr = get_result(implementation::COMPRESSED_SPARSE_ROW, 10, 10, conn, conn2, 1);
         auto _dok = get_result(implementation::DICTIONARY_OF_KEYS, 10, 10, conn, conn2, 1);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_SUITE(simple_cross_test)
 
     BOOST_AUTO_TEST_CASE(test_all_implementations2) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        std::shared_ptr<scd_session> conn2 = std::make_shared<scd_session>(IP_ADDRESS);
+        std::shared_ptr<scmd_session> conn2 = std::make_shared<scmd_session>(IP_ADDRESS);
         auto _coo = get_result(implementation::COORDINATE_LIST, 20, 20, conn, conn2, 3);
         auto _csr = get_result(implementation::COMPRESSED_SPARSE_ROW, 20, 20, conn, conn2, 3);
         auto _dok = get_result(implementation::DICTIONARY_OF_KEYS, 20, 20, conn, conn2, 3);
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_SUITE(simple_cross_test)
 
     BOOST_AUTO_TEST_CASE(test_all_implementations3) {
         std::shared_ptr<connector> conn = std::make_shared<connector>(IP_ADDRESS);
-        std::shared_ptr<scd_session> conn2 = std::make_shared<scd_session>(IP_ADDRESS);
+        std::shared_ptr<scmd_session> conn2 = std::make_shared<scmd_session>(IP_ADDRESS);
         auto _coo = get_result(implementation::COORDINATE_LIST, 6, 30, conn, conn2, 42);
         auto _csr = get_result(implementation::COMPRESSED_SPARSE_ROW, 6, 30, conn, conn2, 42);
         auto _dok = get_result(implementation::DICTIONARY_OF_KEYS, 6, 30, conn, conn2, 42);

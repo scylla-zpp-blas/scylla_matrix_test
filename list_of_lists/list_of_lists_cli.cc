@@ -5,9 +5,9 @@
 
 int main(int argc, char *argv[]) {
     using namespace std::string_literals;
-    std::shared_ptr<scd_session> conn;
+    std::shared_ptr<scmd::session> conn;
     try {
-        conn = std::make_shared<scd_session>(argv[1]);
+        conn = std::make_shared<scmd::session>(argv[1]);
         fmt::print("Connected\n");
     } catch (...) {
         fmt::print("Connection error\n");

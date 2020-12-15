@@ -36,20 +36,25 @@ set(UTILS_SRC
         )
 
 set(SCYLLA_DRIVER
-        list_of_lists/scylla_driver/scd_exceptions.hh
-        list_of_lists/scylla_driver/scd_exceptions.cc
-        list_of_lists/scylla_driver/scd_prepared_query.hh
-        list_of_lists/scylla_driver/scd_prepared_query.cc
-        list_of_lists/scylla_driver/scd_query_result.hh
-        list_of_lists/scylla_driver/scd_query_result.cc
-        list_of_lists/scylla_driver/scd_session.hh
-        list_of_lists/scylla_driver/scd_session.cc
-        list_of_lists/scylla_driver/scd_statement.hh
-        list_of_lists/scylla_driver/scd_statement.cc
+        list_of_lists/scylla_driver/exceptions.hh
+        list_of_lists/scylla_driver/exceptions.cc
+        list_of_lists/scylla_driver/prepared_query.hh
+        list_of_lists/scylla_driver/prepared_query.cc
+        list_of_lists/scylla_driver/query_result.hh
+        list_of_lists/scylla_driver/query_result.cc
+        list_of_lists/scylla_driver/session.hh
+        list_of_lists/scylla_driver/session.cc
+        list_of_lists/scylla_driver/statement.hh
+        list_of_lists/scylla_driver/statement.cc
         list_of_lists/scylla_driver/value_converters/collection_appender.hh
+        list_of_lists/scylla_driver/value_converters/collection_appender.cc
         list_of_lists/scylla_driver/value_converters/statement_binder.hh
+        list_of_lists/scylla_driver/value_converters/statement_binder.cc
         list_of_lists/scylla_driver/value_converters/tuple_binder.hh
+        list_of_lists/scylla_driver/value_converters/tuple_binder.cc
         list_of_lists/scylla_driver/value_converters/value_retriever.hh
+        list_of_lists/scylla_driver/value_converters/value_retriever.cc
+        list_of_lists/scylla_driver/value_converters/traits.hh
         )
 
 add_executable(scylla_matrix_test main.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")

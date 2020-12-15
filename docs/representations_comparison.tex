@@ -147,15 +147,15 @@ To avoid using built-in sets or lists, we treat each database row as constant-si
 
 Second table works exactly the same way, but stores columns, not rows - it is used to perform multiplication more effectively. Unfortunately, preparing matrix in second table (so pretty much transposing matrix) is slow.
 
-Currently, multiplication is performed without any optimizations, and in very slow way. For each row, we iterate trough columns and calculate single cell of result. After completing whole row, we submit it to database. After that, we create column matrix in second table. First optimization would be to calculate blocks of result. For each block of size NxN, we could fetch parts of N rows and parts of N columns, start multiplying them, and fetch new parts (while forgetting old ones) as necessary. Second optimization would be fetching data using different thread than used to count result, to maximize throughput.
+Currently, multiplication is performed without any optimizations, and in very slow way. For each row, we iterate trough columns and calculate single cell of result. After completing whole row, we submit it to database. After that, we create a column matrix of the result matrix in the second table. First optimization would be to calculate blocks of result. For each block of size NxN, we could fetch parts of N rows and parts of N columns, start multiplying them, and fetch new parts (while forgetting old ones) as necessary. Second optimization would be fetching data using different thread than used to count result, to maximize throughput.
 
 Advantages:
 \begin{itemize}
  \item Low overhead of fetching row / part of row. Small amount of database rows need to be retrieved (because many values can be stored per row), also, much bigger \% of fetched data is actual data, not matrix\_id / row\_id etc, compared to DOK and CSR.
  \item Potentially very fast multiplication and other algorithms.
  \item No lists or sets, so no performance problems related to them (using them might be a problem with COO).
- \item Doesn't need the O(n) space for string row index array, which is the case with CSR - so it can easily store matrices with really big dimensions.
- \item Creating matrix in rows table is fast and easy - we can create whole part of row locally, and insert with one prepared query, which isn't the case with other DOK/CSR.
+ \item Doesn't need the O(n) space for storing row index array, which is the case with CSR - so it can easily store matrices with really big dimensions.
+ \item Creating matrix in the rows table is fast and easy - we can create whole part of a row locally, and insert it with one prepared query, which isn't the case with DOK/CSR.
 \end{itemize}
 
 Disadvantages:
