@@ -171,13 +171,13 @@ Overall, I think it may be pretty decent representation and I'd consider using i
 The \textbf{coordinate list} format assumes that the entire matrix is stored as a continuous, lexicographically sorted array of records of the type \code{(coord\_i, coord\_j, value)}. There are a few reasons as to why it was impossible to implement this approach in its purest form:
 
 \begin{itemize}
-\item We want to cooperate with Scylla's clustering by splitting the matrix' data into smaller chunks, residing in different partitions of the database (so as to split it roughly evenly among all clusters).
+\item We want to cooperate with Scylla's clustering by splitting the matrix's data into smaller chunks that would reside in different partitions of the database (so as to split it roughly evenly among all clusters).
 \item The Scylla's native type for continuous lists is highly inefficient.
 \end{itemize}
 
-In order to satisfy the condition that the data be split into multiple chunks, we split the stored matrix into multiple blocks of the size (\code{\_block\_size} x \code{\_block\_size}), numbered $1..m$, (growing from left to right, then from the top to the bottom) where $m$ is the total number of blocks (full or partial) that make up the original matrix. 
+In order to satisfy the condition that the data be split into multiple chunks, we split the matrix being stored into multiple blocks sized (\code{\_block\_size} x \code{\_block\_size}), numbered $1..m$, (growing from left to right, then from the top to the bottom) where $m$ is the total number of blocks (full or partial) that make up the original matrix. 
 
-Each block belongs in its own partition, and is represented as a single database record containing its unique key (the block's number, being also a partition number), the identifier of its original matrix (for now simply a number), and a (relatively short) list of the coordinates that the block contains.
+Each block belongs in its own partition, and is represented as a single database record with a unique key (the block's number, being also a partition number), the identifier of the matrix of origin (for now simply a number), and a (relatively short) list of the coordinates that the block contains.
 
 \begin{lstlisting}[style=SQLStyle]
 CREATE TABLE zpp.coo_matrices (
@@ -188,29 +188,27 @@ CREATE TABLE zpp.coo_matrices (
 ) WITH CLUSTERING ORDER BY (matrix_id ASC);
 \end{lstlisting}
 
-(Please note that the current implementation of the \textbf{coordinate list}-based multiplicator creates a new table in its constructor -- this means that this kind of multiplicator must be a singleton at most, and that the creation of every multiplicator takes a good bit of time).
+(Please note that the current implementation of the \textbf{coordinate list}-based multiplicator creates a new table in its constructor -- this means that this kind of multiplicator must be a singleton at most, and that creation of each new multiplicator takes a good portion of time).
 
-The multiplication is done block-wise: for each result blocks, the blocks of multiplicated matrices are loaded blockwise and their results are added as the result is computed in the local memory. Then, the block is submitted to the database, and the next one is computed. This makes for an intuitive multiplication algorithm, albeit with some flaws -- for instance, it is difficult to obtain a single call of the result quickly. 
+The multiplication is done block-wise: for each result block, the blocks of multiplied matrices are loaded and multiplied pairwise. The results are aggregated in local memory. Then, the result block is submitted to the database, and the next one is computed. This makes for an intuitive multiplication algorithm, albeit with some flaws -- for instance, it is difficult to obtain a single call of the result quickly. 
 
 Note that:
 \begin{itemize}
-\item In order to perform the multiplication slightly more effectively, every block loaded from one of the matrices is transposed before the multiplication. This part uses sorting, which in fact can be done quicker, in linear time, at the cost of a more difficult implementation.
+\item In order to perform the multiplication slightly more effectively, every block loaded from one of the matrices is transposed before the multiplication. This part uses sorting, which in fact can be done quicker, in linear time, at the cost of a more difficult implementation. 
 \item Perhaps the multiplication process itself could be sped up with some minor optimisations. For one thing, we probably don't even need to transpose any of the blocks.
 \end{itemize}
 
-For now, querying a result value loads the entire block that the value is located in, and looks for it in the list loaded from the database. It is likely that we could use a refined query to retrieve a single value from the database instead of requesting an entire block. 
+For now, querying a result value is performed by loading the entire block that the value is located in, and browsing the coordinate list obtained this way. It is likely that we could use a refined query to retrieve a single value from the database instead of requesting an entire block. 
 
 Remarks: 
 \begin{itemize} 
-\item The representation is a bit awkward and uncomfortable to use. (It's entirely possible, though, that it is the case with all our implementations).
+\item The representation is a bit awkward and uncomfortable to use. (But seems more intuitive and user-friendly than the LIL and CSR implementations).
 \item Most of the benefits of using blocks could be obtained with any other representation, although \textbf{coordinate lists} seem to be among the most natural tools for iteration over the values of a matrix. On the other hand, the block-based representation makes construction of the actual coordinate list of an entire matrix slightly more difficult than we would like it.
-\item There could be better partitioning keys for blocks. Perhaps their diagonal, instead of serial, numbers?
-\item Scylla's native \code{set}s are said not to be the as efficient as we would like it. Perhaps we would be better off without them. That would probably bring us closer to the \textbf{dictionary of keys} representation, though.
+\item Perhaps better partitioning keys for blocks could be found. Maybe their diagonal, instead of serial, numbers?
+\item Scylla's native \code{set}s are said not to be the as efficient as we would like it. We would likely be better off without them. This again brings us back to DOK.
 \end{itemize}
 
-In summary, the \textbf{coordinate list} representation seems to combine both advantages and weaknesses of other representations, and might not be the best candidate for our experiments with Scylla, given that there are likely better options, with more positives than negatives. 
-
-It is, however, far from useless, as it looks like a fairly convenient way of data storage in the C++ context (the other being a set or a map, which, again, brings about the question of effectiveness that would have to be confirmed in tests). Quite possibly, we could combine its application in C++ with some other internal representation in Scylla to get the best of both worlds and to obtain optimal results. Still, I would not recommend it as first choice for our further work, and endorse it only if all other options prove to have numerous difficulties of their own.
+In summary, \textbf{coordinate list} may not be the best representation for internal storage in the database, yet it seems like a fairly good extension (or one of them) for \textbf{dictionary of keys} for RAM-based calculations. It could easily be simulated e.g. with \textbf{std::set} or \textbf{std::map}, combining random access with an iterable ordering, or with \textbf{std::list}, if it allows us to reduce the overall overhead.
 
 \pagebreak
 \section{Compressed sparse row}
