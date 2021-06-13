@@ -1,0 +1,130 @@
+# Tests of matrix representations in Scylla.
+
+## Introduction
+
+This repository contains the results of the research our team conducted at the start of the ZPP project, whose purpose was to find the best matrix representation for use in Scylla. 
+
+Each of the four team members prepared his own interpretation of one popular representation:
+
+* compressed sparse row (CSR),
+* coordinate list (COO),
+* dictionary of keys (DOK),
+* list of lists (LIL).
+
+These representations are included as classes in the corresponding folders.
+
+The `docs` folder of the repository contains a LaTeX source with descriptions of all the representations and some remarks regarding each strategy.
+
+This repository contains early versions of files later used 
+in the ScyllaBLAS library, including the matrix generators
+and the shell script used to run Scylla, and even the C++ driver.
+
+## Building
+
+Make sure all submodules have been downloaded with the repository:
+
+```
+git submodule init 
+git submodule update --recursive
+```
+
+In order to build all files, create a `build` directory, then run:
+
+```
+cd build
+cmake ..
+make
+```
+
+## Usage
+
+### Setup the database
+
+Run:
+
+```
+./run_scylla.sh
+```
+
+from the repository's main directory.
+
+This will create a Scylla cluster with an IP address `172.19.0.2`,
+which is used by our executables.
+
+Note that sime time may need to pass since the initialization
+for the cluster to become usable.
+
+### Test programs
+
+With Scylla set up as described, any of the three executables
+created by the `make` command can be run:
+
+* dok_test
+* lil_cli
+* simple_test
+
+Each of the executables uses on or more representations
+to store a matrix and perform a naive matrix multiplication
+on a pair of such matrices.
+
+Some of them offer additional functionalities.
+
+The representations had not been optimalized so their performance
+may not be representative of their true potential.
+
+Tests may not work on slower machines, where requests 
+to the Scylla cluster may result in timeouts.
+
+#### dok_test
+
+`dok_test` is used to test the operationability of the DOK representation
+and does not require any arguments.
+
+#### lil_cli
+
+`lil_cli` are used to test the operationability of the LIL representation.
+It can be run in any of the following ways:
+
+* Initialize the testing space in the database:
+```
+./lil_cli 172.19.0.2 make_tables
+```
+
+* List all matrices stored in the database:
+```
+./lil_cli 172.19.0.2 list
+```
+
+* Generate a random matrix (`seed` is optional):
+```
+./lil_cli 172.19.0.2 gen <height> <width> <value_cnt> [seed]
+```
+
+* Delete a matrix from the database:
+```
+./lil_cli 172.19.0.2 delete <matrix_id>
+```
+
+* Print the contents of matrix to the standard output:
+```
+./lil_cli 172.19.0.2 show <matrix_id>
+```
+
+* Multiply two matrices. The result will be stored as a new matrix.
+```
+./lil_cli 172.19.0.2 multipli <A_id> <B_id>
+```
+
+#### simple_test
+
+`simple_test` uses the Boost test framework and runs some operations 
+for each represenation and compares the results. 
+
+Passing all tests means that the results of operations 
+performed on all representations were all equal or equivalent,
+suggestign that all the implementations are correct.
+
+This executable does not require any arguments.
+
+
+

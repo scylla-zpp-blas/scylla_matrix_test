@@ -54,7 +54,7 @@
 
 \begin{document}\thispagestyle{empty}\phantom{m} \vspace{4em}
 
-\title{Matrix representations in Scylla database}
+\title{Matrix representations in the Scylla database}
 \date{}
 \author{}
 \maketitle
@@ -75,8 +75,6 @@ This document aims to summarise our representations based on each of the models 
 
 \pagebreak
 \section*{Overview}
-
-\{ Should we write something about how we generated our matrices? Also: matrix\_value type \}
 
 The representations were implemented in the C++ programming language and used by subclasses of an abstract template \textbf{multiplicator\textless T\textgreater} class (contained in \code{multiplicator.hh}), parametrised by the type of values stored in the matrices (most likely \code{float} or \code{double}). The intended application for each of the specialisations was thus:
 
@@ -253,15 +251,4 @@ Here are some of the possible issues with CSR representation:
 
 As already mentioned the main feature of CSR representation is the ability of easily retriving a single row. For this reason the representation is mostly useful in algorithms and applications that naturally use such queries (one possible example could be representing large, immutable sparse graphs as matrices - a single row corresponds to the neighbours of a given vertex). It might be worth comparing this representation with the \textbf{list of lists} representation in such uses.
 
-
-\pagebreak
-\section*{Rubbish bin}
-
-\begin{lstlisting}[style=CStyle]
-#include <stdio.h>
-int main(void)
-{
-   printf("Hello World!"); 
-}
-\end{lstlisting}
 \end{document} 

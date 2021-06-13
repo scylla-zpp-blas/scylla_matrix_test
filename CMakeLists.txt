@@ -35,11 +35,7 @@ set(UTILS_SRC
         utils/requestor.cc
         )
 
-
-add_executable(scylla_matrix_test main.cc "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
-target_link_libraries(scylla_matrix_test scylla_modern_cpp_driver fmt::fmt)
-
-add_executable(simple_test simple_test.cpp coordinate_list/coordinate_list.hh "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
+add_executable(simple_test simple_test.cc coordinate_list/coordinate_list.hh "${BASE_SRC}" "${GENERATOR_SRC}" "${UTILS_SRC}")
 target_link_libraries(simple_test scylla_modern_cpp_driver
         ${Boost_FILESYSTEM_LIBRARY}
         ${Boost_SYSTEM_LIBRARY}
