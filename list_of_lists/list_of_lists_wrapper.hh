@@ -9,7 +9,7 @@ private:
     bool first_call = true;
 public:
 
-    explicit LIL_wrapper(const std::shared_ptr<scmd_session>& connection) : repr(connection) {};
+    explicit LIL_wrapper(const std::shared_ptr<scmd::session>& connection) : repr(connection) {};
 
     void load_matrix(matrix_value_generator<T>&& gen) override {
         if(first_call) {
