@@ -17,7 +17,7 @@ The `docs` folder of the repository contains a LaTeX source with descriptions of
 
 This repository contains early versions of files later used 
 in the ScyllaBLAS library, including the matrix generators
-and the shell script used to run Scylla, and even the C++ driver.
+and the shell script used to run Scylla.
 
 ## Building
 
