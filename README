@@ -21,11 +21,10 @@ and the shell script used to run Scylla.
 
 ## Building
 
-Make sure all submodules have been downloaded with the repository:
+Make sure that all the required submodules have been downloaded:
 
 ```
-git submodule init 
-git submodule update --recursive
+git submodule update --init --recursive
 ```
 
 In order to build all files, create a `build` directory, then run:

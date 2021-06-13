@@ -10,8 +10,9 @@
 
 #include "../float_value_factory.hh"
 #include "../sparse_matrix_value_generator.hh"
-#include "../../scylla_modern_cpp_driver/include/prepared_query.hh"
-#include "../../scylla_modern_cpp_driver/include/session.hh"
+
+#include "../../scylla_driver/include/prepared_query.hh"
+#include "../../scylla_driver/include/session.hh"
 
 
 namespace {

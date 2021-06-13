@@ -1,12 +1,13 @@
 #include <list>
 
+#include "../../scylla_driver/include/session.hh"
+
 #include "multiplicator.hh"
 #include "float_value_factory.hh"
 #include "sparse_matrix_value_generator.hh"
 #include "compressed_sparse_row/compressed_sparse_row.hh"
 #include "coordinate_list/coordinate_list.hh"
 #include "dictionary_of_keys/dictionary_of_keys.hh"
-#include "../scylla_modern_cpp_driver/include/session.hh"
 #include "list_of_lists/list_of_lists_wrapper.hh"
 
 #define BOOST_TEST_MAIN
